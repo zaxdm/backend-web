@@ -1,6 +1,6 @@
 'use strict';
 
-const { About } = require('../../models');
+const About = require('../models/about');
 
 /**
  * Obtener contenido About

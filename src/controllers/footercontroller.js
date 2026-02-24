@@ -1,7 +1,6 @@
 'use strict';
 
-const db = require('../../models');
-const Footer = db.Footer;
+const Footer = require('../models/footer');
 
 /**
  * Obtener Footer

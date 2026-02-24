@@ -1,27 +1,28 @@
 'use strict';
 
-module.exports = (sequelize, DataTypes) => {
-  const Home = sequelize.define(
-    'Home',
-    {
-      hero: {
-        type: DataTypes.JSON,
-        allowNull: false
-      },
-      cards: {
-        type: DataTypes.JSON,
-        allowNull: false
-      },
-      about: {
-        type: DataTypes.JSON,
-        allowNull: false
-      }
-    },
-    {
-      tableName: 'home',
-      timestamps: true
-    }
-  );
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/sequelize');
 
-  return Home;
-};
+const Home = sequelize.define(
+  'Home',
+  {
+    hero: {
+      type: DataTypes.JSON,
+      allowNull: false
+    },
+    cards: {
+      type: DataTypes.JSON,
+      allowNull: false
+    },
+    about: {
+      type: DataTypes.JSON,
+      allowNull: false
+    }
+  },
+  {
+    tableName: 'home',
+    timestamps: true
+  }
+);
+
+module.exports = Home;

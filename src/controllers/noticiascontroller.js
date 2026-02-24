@@ -1,6 +1,6 @@
 'use strict';
 
-const { Noticias } = require('../../models');
+const Noticias = require('../models/noticias');
 
 /**
  * Obtener todas las noticias

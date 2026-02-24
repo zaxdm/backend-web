@@ -1,7 +1,6 @@
 'use strict';
 
-const db = require('../../models');
-const Navbar = db.Navbar;
+const Navbar = require('../models/navbar');
 
 /**
  * Obtener Navbar
@@ -68,7 +67,7 @@ exports.createNavbar = async (req, res) => {
       aboutLabel,
       contactoLabel,
       contactoRuta,
-     iguenos,
+      siguenos,
       buscarPlaceholder,
       aboutMenu,
       productosMenu,
@@ -99,7 +98,7 @@ exports.createNavbar = async (req, res) => {
       aboutLabel,
       contactoLabel,
       contactoRuta,
-     iguenos,
+      siguenos,
       buscarPlaceholder,
       aboutMenu,
       productosMenu,

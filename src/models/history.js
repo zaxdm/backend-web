@@ -1,23 +1,24 @@
 'use strict';
 
-module.exports = (sequelize, DataTypes) => {
-  const History = sequelize.define(
-    'History',
-    {
-      heroTitle: {
-        type: DataTypes.STRING,
-        allowNull: false
-      },
-      timeline: {
-        type: DataTypes.JSON,
-        allowNull: false
-      }
-    },
-    {
-      tableName: 'history',
-      timestamps: true
-    }
-  );
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/sequelize');
 
-  return History;
-};
+const History = sequelize.define(
+  'History',
+  {
+    heroTitle: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
+    timeline: {
+      type: DataTypes.JSON,
+      allowNull: false
+    }
+  },
+  {
+    tableName: 'history',
+    timestamps: true
+  }
+);
+
+module.exports = History;

@@ -1,6 +1,6 @@
 'use strict';
 
-const { ContactPage } = require('../../models');
+const ContactPage = require('../models/contact_page');
 
 /**
  * Obtener Contact Page

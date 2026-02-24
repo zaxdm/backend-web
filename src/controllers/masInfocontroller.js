@@ -1,6 +1,6 @@
 'use strict';
 
-const { MasInfo } = require('../../models');
+const MasInfo = require('../models/mas_info');
 
 /**
  * Obtener MasInfo

@@ -1,7 +1,6 @@
 'use strict';
 
-const db = require('../../models');
-const Home = db.Home;
+const Home = require('../models/home');
 
 // GET /api/home
 exports.getHome = async (req, res) => {

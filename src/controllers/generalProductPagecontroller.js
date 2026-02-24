@@ -1,6 +1,6 @@
 'use strict';
 
-const { GeneralProductPage } = require('../../models');
+const GeneralProductPage = require('../models/general_product_page');
 
 /**
  * Obtener General Product Page

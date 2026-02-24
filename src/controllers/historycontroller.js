@@ -1,6 +1,6 @@
 'use strict';
 
-const { History } = require('../../models');
+const History = require('../models/history');
 
 /**
  * Obtener History

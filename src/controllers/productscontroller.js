@@ -1,6 +1,6 @@
 'use strict';
 
-const { Products } = require('../../models');
+const Products = require('../models/products');
 
 function parseMaybeJSON(value, fallback) {
   if (value == null) return fallback;

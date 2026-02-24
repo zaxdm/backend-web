@@ -1,19 +1,20 @@
 'use strict';
 
-module.exports = (sequelize, DataTypes) => {
-  const Footer = sequelize.define(
-    'Footer',
-    {
-      content: {
-        type: DataTypes.JSON,
-        allowNull: false
-      }
-    },
-    {
-      tableName: 'footer',
-      timestamps: true
-    }
-  );
+const { DataTypes } = require('sequelize');
+const sequelize = require('../config/sequelize');
 
-  return Footer;
-};
+const Footer = sequelize.define(
+  'Footer',
+  {
+    content: {
+      type: DataTypes.JSON,
+      allowNull: false
+    }
+  },
+  {
+    tableName: 'footer',
+    timestamps: true
+  }
+);
+
+module.exports = Footer;
