@@ -3,7 +3,6 @@ const router = express.Router();
 
 const usuariosRoutes = require('./api/UsuarioRoutes');
 const authRoutes = require('./api/authRoutes');
-const authController = require('../controllers/authController');
 const homeRoutes = require('./api/homeroutes');
 const aboutRoutes = require('./api/aboutroutes');
 const contactPageRoutes = require('./api/contactPageroutes');
@@ -17,8 +16,6 @@ const productsRoutes = require('./api/productsroutes');
 
 router.use('/usuarios', usuariosRoutes);
 router.use('/auth', authRoutes);
-// Compatibilidad con frontend: /api/login
-router.post('/login', authController.autenticarUsuario);
 router.use('/home', homeRoutes);
 router.use('/about', aboutRoutes);
 router.use('/contact-page', contactPageRoutes);

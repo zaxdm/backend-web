@@ -53,6 +53,7 @@ exports.obtenerUsuarioPorId = [
    CREAR USUARIO
 ====================================================== */
 exports.crearUsuario = [
+  verificarToken,
   async (req, res) => {
     try {
       const { codigo_dni, apellidos, nombres, cargo, rol, correo, password } = req.body;
