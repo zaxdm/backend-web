@@ -53,8 +53,12 @@ exports.obtenerUsuarioPorId = [
    CREAR USUARIO
 ====================================================== */
 exports.crearUsuario = [
+  verificarToken,
   async (req, res) => {
     try {
+      if (!req.user || req.user.rol !== 'admin') {
+        return res.status(403).json({ error: 'Solo administradores pueden crear usuarios' });
+      }
       const { codigo_dni, apellidos, nombres, cargo, rol, correo, password } = req.body;
 
       // Validar DNI duplicado
