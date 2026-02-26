@@ -36,56 +36,57 @@ exports.obtenerUsuarioPorId = [
   }
 ];
 
-// ------------------ CREAR USUARIO ------------------
-exports.crearUsuario = [
-  verificarToken,
-  async (req, res) => {
-    try {
-      if (!req.user || req.user.rol !== 'admin') {
-        return res.status(403).json({ error: 'Solo administradores pueden crear usuarios' });
-      }
+/* ======================================================
+   REGISTRO PÚBLICO
+====================================================== */
+exports.registrarUsuario = async (req, res) => {
+  try {
+    const { codigo_dni, apellidos, nombres, cargo, rol, correo, password } = req.body;
 
-      const { codigo_dni, apellidos, nombres, cargo, rol, correo, password } = req.body;
+    // Validar que no exista DNI duplicado
+    const existeDni = await Usuario.findOne({ where: { codigo_dni } });
+    if (existeDni) {
+      return res.status(400).json({ error: 'Ya existe un usuario con ese DNI' });
+    }
 
-      // Validar duplicados
-      if (await Usuario.findOne({ where: { codigo_dni } })) {
-        return res.status(400).json({ error: 'Ya existe un usuario con ese DNI' });
-      }
-      if (correo && await Usuario.findOne({ where: { correo } })) {
+    // Validar correo duplicado si se envía
+    if (correo) {
+      const existeCorreo = await Usuario.findOne({ where: { correo } });
+      if (existeCorreo) {
         return res.status(400).json({ error: 'El correo ya está en uso' });
       }
+    }
 
-      // Encriptar contraseña
-      const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash de la contraseña
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-      const nuevoUsuario = await Usuario.create({
+    const nuevoUsuario = await Usuario.create({
+      codigo_dni,
+      apellidos,
+      nombres,
+      cargo: cargo || null,
+      rol: rol || 'usuario', // Por defecto 'usuario'
+      correo: correo || null,
+      password: hashedPassword
+    });
+
+    res.status(201).json({
+      message: 'Usuario registrado correctamente',
+      usuario: {
+        id: nuevoUsuario.id,
         codigo_dni,
         apellidos,
         nombres,
-        cargo: cargo || null,
-        rol: rol || null,
-        correo: correo || null,
-        password: hashedPassword
-      });
-
-      res.status(201).json({
-        message: 'Usuario creado correctamente',
-        usuario: {
-          id: nuevoUsuario.id,
-          codigo_dni,
-          apellidos,
-          nombres,
-          cargo,
-          rol,
-          correo
-        }
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Error al crear usuario' });
-    }
+        cargo,
+        rol: 'usuario',
+        correo
+      }
+    });
+  } catch (error) {
+    console.error('Error al registrar usuario:', error);
+    res.status(500).json({ error: 'Error al registrar usuario' });
   }
-];
+};
 
 // ------------------ ACTUALIZAR USUARIO ------------------
 exports.actualizarUsuario = [
