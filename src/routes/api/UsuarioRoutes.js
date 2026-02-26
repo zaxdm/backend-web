@@ -2,25 +2,14 @@ const express = require('express');
 const router = express.Router();
 const usuarioController = require('../../controllers/UsuarioController');
 
-router.get('/usuarios', usuarioController.obtenerUsuarios);
+// Base mount is /api/usuarios in routes/index.js
+router.get('/', usuarioController.obtenerUsuarios);
+router.get('/:id', usuarioController.obtenerUsuarioPorId);
+router.post('/', usuarioController.crearUsuario);
+router.put('/:id', usuarioController.actualizarUsuario);
+router.delete('/:id', usuarioController.eliminarUsuario);
 
-router.get('/operadores', usuarioController.obtenerOperadores);
-
-router.get('/usuarios/:id', usuarioController.obtenerUsuarioPorId);
-
-router.get('/guardia', usuarioController.obtenerJefesGuardia);
-
-router.post('/usuarios', usuarioController.crearUsuario);
-
-router.put('/usuarios/:id/operaciones', usuarioController.actualizarOperacionesAutorizadas);
-
-router.put('/usuarios/:id', usuarioController.actualizarUsuario);
-
-router.delete('/usuarios/:id', usuarioController.eliminarUsuario);
-
+// Extra endpoint: /api/usuarios/perfil
 router.get('/perfil', usuarioController.obtenerPerfil);
 
-router.put('/usuarios/:id/firma', usuarioController.actualizarFirma);
-
 module.exports = router;
- 
