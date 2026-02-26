@@ -15,13 +15,15 @@ exports.obtenerUsuarios = [
         attributes: { exclude: ['password'] },
         order: [['apellidos', 'ASC']]
       });
+
       res.status(200).json(usuarios);
     } catch (error) {
       console.error('Error al obtener usuarios:', error);
-      res.status(500).json({ error: 'Error al obtener los usuarios', detalle: error.message });
+      res.status(500).json({ error: 'Error al obtener los usuarios' });
     }
   }
 ];
+
 
 /* ======================================================
    OBTENER USUARIO POR ID
@@ -33,14 +35,19 @@ exports.obtenerUsuarioPorId = [
       const usuario = await Usuario.findByPk(req.params.id, {
         attributes: { exclude: ['password'] }
       });
-      if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+      if (!usuario) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+
       res.status(200).json(usuario);
     } catch (error) {
       console.error('Error al obtener usuario:', error);
-      res.status(500).json({ error: 'Error al obtener usuario', detalle: error.message });
+      res.status(500).json({ error: 'Error al obtener usuario' });
     }
   }
 ];
+
 
 /* ======================================================
    CREAR USUARIO
@@ -51,18 +58,18 @@ exports.crearUsuario = [
     try {
       const { codigo_dni, apellidos, nombres, cargo, rol, correo, password } = req.body;
 
-      // Validar campos obligatorios
-      if (!codigo_dni || !apellidos || !nombres || !password) {
-        return res.status(400).json({ error: 'Faltan campos obligatorios' });
+      // Validar DNI duplicado
+      const existeDni = await Usuario.findOne({ where: { codigo_dni } });
+      if (existeDni) {
+        return res.status(400).json({ error: 'Ya existe un usuario con ese DNI' });
       }
 
-      // Validar duplicados
-      const existeDni = await Usuario.findOne({ where: { codigo_dni } });
-      if (existeDni) return res.status(400).json({ error: 'Ya existe un usuario con ese DNI' });
-
+      // Validar correo duplicado
       if (correo) {
         const existeCorreo = await Usuario.findOne({ where: { correo } });
-        if (existeCorreo) return res.status(400).json({ error: 'El correo ya está en uso' });
+        if (existeCorreo) {
+          return res.status(400).json({ error: 'El correo ya está en uso' });
+        }
       }
 
       // Encriptar contraseña
@@ -74,7 +81,7 @@ exports.crearUsuario = [
         apellidos,
         nombres,
         cargo: cargo || null,
-        rol: rol || 'usuario',
+        rol: rol || null,
         correo: correo || null,
         password: hashedPassword
       });
@@ -87,21 +94,18 @@ exports.crearUsuario = [
           apellidos,
           nombres,
           cargo,
-          rol: rol || 'usuario',
+          rol,
           correo
         }
       });
 
     } catch (error) {
-      console.error('Error al crear usuario completo:', error);
-      res.status(500).json({ 
-        error: 'Error al crear usuario', 
-        detalle: error.message,
-        stack: error.stack
-      });
+      console.error('Error al crear usuario:', error);
+      res.status(500).json({ error: 'Error al crear usuario' });
     }
   }
 ];
+
 
 /* ======================================================
    ACTUALIZAR USUARIO
@@ -111,22 +115,22 @@ exports.actualizarUsuario = [
   async (req, res) => {
     try {
       const usuario = await Usuario.findByPk(req.params.id);
-      if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+      if (!usuario) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
 
       const { codigo_dni, apellidos, nombres, cargo, rol, correo, password } = req.body;
 
-      // Validar duplicados
-      if (codigo_dni && codigo_dni !== usuario.codigo_dni) {
-        const existeDni = await Usuario.findOne({ where: { codigo_dni } });
-        if (existeDni) return res.status(400).json({ error: 'El DNI ya está en uso' });
-      }
-
+      // Validar correo duplicado si cambia
       if (correo && correo !== usuario.correo) {
         const existeCorreo = await Usuario.findOne({ where: { correo } });
-        if (existeCorreo) return res.status(400).json({ error: 'El correo ya está en uso' });
+        if (existeCorreo) {
+          return res.status(400).json({ error: 'El correo ya está en uso' });
+        }
       }
 
-      // Actualizar contraseña si se envía
+      // Si envían nueva contraseña
       if (password) {
         const salt = await bcrypt.genSalt(10);
         usuario.password = await bcrypt.hash(password, salt);
@@ -145,10 +149,11 @@ exports.actualizarUsuario = [
 
     } catch (error) {
       console.error('Error al actualizar usuario:', error);
-      res.status(500).json({ error: 'Error al actualizar usuario', detalle: error.message });
+      res.status(500).json({ error: 'Error al actualizar usuario' });
     }
   }
 ];
+
 
 /* ======================================================
    ELIMINAR USUARIO
@@ -158,17 +163,22 @@ exports.eliminarUsuario = [
   async (req, res) => {
     try {
       const usuario = await Usuario.findByPk(req.params.id);
-      if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+      if (!usuario) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
 
       await usuario.destroy();
+
       res.status(200).json({ message: 'Usuario eliminado correctamente' });
 
     } catch (error) {
       console.error('Error al eliminar usuario:', error);
-      res.status(500).json({ error: 'Error al eliminar usuario', detalle: error.message });
+      res.status(500).json({ error: 'Error al eliminar usuario' });
     }
   }
 ];
+
 
 /* ======================================================
    OBTENER PERFIL DEL USUARIO LOGUEADO
@@ -180,13 +190,17 @@ exports.obtenerPerfil = [
       const usuario = await Usuario.findByPk(req.user.id, {
         attributes: { exclude: ['password'] }
       });
-      if (!usuario) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+      if (!usuario) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
 
       res.status(200).json(usuario);
 
     } catch (error) {
       console.error('Error al obtener perfil:', error);
-      res.status(500).json({ error: 'Error al obtener perfil', detalle: error.message });
+      res.status(500).json({ error: 'Error al obtener perfil' });
     }
   }
 ];
+
