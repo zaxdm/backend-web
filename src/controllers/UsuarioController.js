@@ -53,7 +53,6 @@ exports.obtenerUsuarioPorId = [
    CREAR USUARIO
 ====================================================== */
 exports.crearUsuario = [
-  verificarToken,
   async (req, res) => {
     try {
       const { codigo_dni, apellidos, nombres, cargo, rol, correo, password } = req.body;
@@ -101,6 +100,14 @@ exports.crearUsuario = [
 
     } catch (error) {
       console.error('Error al crear usuario:', error);
+      // Responder errores comunes con 400 para el frontend
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        return res.status(400).json({ error: 'El correo ya está en uso' });
+      }
+      if (error.name === 'SequelizeValidationError') {
+        const msg = error.errors?.[0]?.message || 'Datos inválidos';
+        return res.status(400).json({ error: msg });
+      }
       res.status(500).json({ error: 'Error al crear usuario' });
     }
   }
