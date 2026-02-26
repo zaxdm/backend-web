@@ -1,4 +1,6 @@
 const { Sequelize } = require('sequelize');
+// Ensure mysql2 is bundled and used explicitly in serverless environments
+const mysql2 = require('mysql2');
 require('dotenv').config();
 
 const sequelize = new Sequelize(
@@ -7,7 +9,8 @@ const sequelize = new Sequelize(
     process.env.DB_PASSWORD,  
     {
         host: process.env.DB_HOST,
-        dialect: 'mysql',  
+        dialect: 'mysql',
+        dialectModule: mysql2,
         port: process.env.DB_PORT || 3306,
     }
 );
