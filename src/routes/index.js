@@ -28,7 +28,7 @@ router.use('/navbar', navbarRoutes);
 router.use('/noticias', noticiasRoutes);
 router.use('/products', productsRoutes);
 
-// Alias de compatibilidad con frontend: /api/login
+// Alias de compatibilidad: /api/login
 router.post('/login', authController.autenticarUsuario);
 
 module.exports = router;

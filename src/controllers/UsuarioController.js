@@ -100,7 +100,6 @@ exports.crearUsuario = [
 
     } catch (error) {
       console.error('Error al crear usuario:', error);
-      // Responder errores comunes con 400 para el frontend
       if (error.name === 'SequelizeUniqueConstraintError') {
         return res.status(400).json({ error: 'El correo ya está en uso' });
       }
