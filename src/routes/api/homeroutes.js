@@ -10,7 +10,7 @@ const upload = require('../../config/uploadCards');
 
 router.get('/', homeController.getHome);
 router.post('/',verificarToken, homeController.updateHome);
-router.put('/home', upload.fields([
+router.put('/', upload.fields([
   { name: 'cardImage_0' }, { name: 'cardImage_1' },
   { name: 'cardImage_2' }, { name: 'cardImage_3' },
   { name: 'cardImage_4' }
