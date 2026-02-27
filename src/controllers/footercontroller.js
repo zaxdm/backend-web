@@ -1,6 +1,7 @@
 'use strict';
 
 const Footer = require('../models/footer');
+const cloudinary = require('../config/cloudinary');
 
 /**
  * Obtener Footer
@@ -88,26 +89,24 @@ exports.createFooter = async (req, res) => {
 exports.updateFooter = async (req, res) => {
   try {
     const footer = await Footer.findOne();
+    if (!footer) return res.status(404).json({ message: 'No existe contenido para actualizar' });
 
-    if (!footer) {
-      return res.status(404).json({
-        message: 'No existe contenido para actualizar'
+    const content = typeof req.body.content === 'string' ? JSON.parse(req.body.content) : req.body.content;
+
+    // Si el logo es base64, subirlo a Cloudinary
+    if (content.logoCentro && content.logoCentro.startsWith('data:image')) {
+      const result = await cloudinary.uploader.upload(content.logoCentro, {
+        folder: 'imagenes/footer',
+        public_id: `logo_${Date.now()}`
       });
+      content.logoCentro = result.secure_url;
     }
 
-    const { content } = req.body;
-
-    await footer.update({
-      content
-    });
-
+    await footer.update({ content });
     res.json(footer);
   } catch (error) {
     console.error('Error al actualizar Footer:', error);
-    res.status(500).json({
-      message: 'Error interno del servidor',
-      error: error.message
-    });
+    res.status(500).json({ message: 'Error interno del servidor', error: error.message });
   }
 };
 
