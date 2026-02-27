@@ -1,10 +1,8 @@
 'use strict';
 
 const Navbar = require('../models/navbar');
+const cloudinary = require('../config/cloudinary');
 
-/**
- * Obtener Navbar
- */
 exports.getNavbar = async (req, res) => {
   try {
     let navbar = await Navbar.findOne();
@@ -41,155 +39,62 @@ exports.getNavbar = async (req, res) => {
     res.json(navbar);
   } catch (error) {
     console.error('Error al obtener Navbar:', error);
-    res.status(500).json({
-      message: 'Error interno del servidor',
-      error: error.message
-    });
+    res.status(500).json({ message: 'Error interno del servidor', error: error.message });
   }
 };
 
-
-/**
- * Crear Navbar (solo si no existe)
- */
 exports.createNavbar = async (req, res) => {
   try {
     const existing = await Navbar.findOne();
+    if (existing) return res.status(400).json({ message: 'El Navbar ya existe. Usa update.' });
 
-    if (existing) {
-      return res.status(400).json({
-        message: 'El Navbar ya existe. Usa update.'
-      });
+    const { productosLabel, aboutLabel, contactoLabel, contactoRuta, siguenos, buscarPlaceholder, aboutMenu, productosMenu, redes, logoActual } = req.body;
+
+    if (!productosLabel || !aboutLabel || !contactoLabel || !contactoRuta || !siguenos || !buscarPlaceholder || !aboutMenu || !productosMenu || !redes || !logoActual) {
+      return res.status(400).json({ message: 'Todos los campos son requeridos' });
     }
 
-    const {
-      productosLabel,
-      aboutLabel,
-      contactoLabel,
-      contactoRuta,
-      siguenos,
-      buscarPlaceholder,
-      aboutMenu,
-      productosMenu,
-      redes,
-      logoActual
-    } = req.body;
-
-    // Validación mínima
-    if (
-      !productosLabel ||
-      !aboutLabel ||
-      !contactoLabel ||
-      !contactoRuta ||
-      !siguenos ||
-      !buscarPlaceholder ||
-      !aboutMenu ||
-      !productosMenu ||
-      !redes ||
-      !logoActual
-    ) {
-      return res.status(400).json({
-        message: 'Todos los campos son requeridos'
-      });
-    }
-
-    const navbar = await Navbar.create({
-      productosLabel,
-      aboutLabel,
-      contactoLabel,
-      contactoRuta,
-      siguenos,
-      buscarPlaceholder,
-      aboutMenu,
-      productosMenu,
-      redes,
-      logoActual
-    });
-
+    const navbar = await Navbar.create({ productosLabel, aboutLabel, contactoLabel, contactoRuta, siguenos, buscarPlaceholder, aboutMenu, productosMenu, redes, logoActual });
     res.status(201).json(navbar);
   } catch (error) {
     console.error('Error al crear Navbar:', error);
-    res.status(500).json({
-      message: 'Error interno del servidor',
-      error: error.message
-    });
+    res.status(500).json({ message: 'Error interno del servidor', error: error.message });
   }
 };
 
-
-/**
- * Actualizar Navbar
- */
 exports.updateNavbar = async (req, res) => {
   try {
     const navbar = await Navbar.findOne();
+    if (!navbar) return res.status(404).json({ message: 'No existe contenido para actualizar' });
 
-    if (!navbar) {
-      return res.status(404).json({
-        message: 'No existe contenido para actualizar'
+    let { productosLabel, aboutLabel, contactoLabel, contactoRuta, siguenos, buscarPlaceholder, aboutMenu, productosMenu, redes, logoActual } = req.body;
+
+    // Si el logo es base64, subirlo a Cloudinary
+    if (logoActual && logoActual.startsWith('data:image')) {
+      const result = await cloudinary.uploader.upload(logoActual, {
+        folder: 'imagenes/navbar',
+        public_id: `logo_${Date.now()}`
       });
+      logoActual = result.secure_url;
     }
 
-    const {
-      productosLabel,
-      aboutLabel,
-      contactoLabel,
-      contactoRuta,
-     iguenos,
-      buscarPlaceholder,
-      aboutMenu,
-      productosMenu,
-      redes,
-      logoActual
-    } = req.body;
-
-    await navbar.update({
-      productosLabel,
-      aboutLabel,
-      contactoLabel,
-      contactoRuta,
-     iguenos,
-      buscarPlaceholder,
-      aboutMenu,
-      productosMenu,
-      redes,
-      logoActual
-    });
-
+    await navbar.update({ productosLabel, aboutLabel, contactoLabel, contactoRuta, siguenos, buscarPlaceholder, aboutMenu, productosMenu, redes, logoActual });
     res.json(navbar);
   } catch (error) {
     console.error('Error al actualizar Navbar:', error);
-    res.status(500).json({
-      message: 'Error interno del servidor',
-      error: error.message
-    });
+    res.status(500).json({ message: 'Error interno del servidor', error: error.message });
   }
 };
 
-
-/**
- * Eliminar Navbar
- */
 exports.deleteNavbar = async (req, res) => {
   try {
     const navbar = await Navbar.findOne();
-
-    if (!navbar) {
-      return res.status(404).json({
-        message: 'No existe contenido para eliminar'
-      });
-    }
+    if (!navbar) return res.status(404).json({ message: 'No existe contenido para eliminar' });
 
     await navbar.destroy();
-
-    res.json({
-      message: 'Navbar eliminado correctamente'
-    });
+    res.json({ message: 'Navbar eliminado correctamente' });
   } catch (error) {
     console.error('Error al eliminar Navbar:', error);
-    res.status(500).json({
-      message: 'Error interno del servidor',
-      error: error.message
-    });
+    res.status(500).json({ message: 'Error interno del servidor', error: error.message });
   }
 };
