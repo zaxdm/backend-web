@@ -1,6 +1,7 @@
 'use strict';
 
 const Home = require('../models/home');
+const cloudinary = require('../config/cloudinary');
 
 // GET /api/home
 exports.getHome = async (req, res) => {
@@ -41,8 +42,6 @@ exports.getHome = async (req, res) => {
 
 // PUT /api/home
 exports.updateHome = async (req, res) => {
-  console.log('BODY:', JSON.stringify(req.body));
-  console.log('FILES:', req.files);
   try {
     const home = await Home.findOne();
     if (!home) return res.status(404).json({ message: 'No existe contenido para actualizar' });
@@ -51,13 +50,15 @@ exports.updateHome = async (req, res) => {
     const about = typeof req.body.about === 'string' ? JSON.parse(req.body.about) : req.body.about;
     const cards = typeof req.body.cards === 'string' ? JSON.parse(req.body.cards) : req.body.cards;
 
-    if (req.files && req.files.length > 0) {
-      req.files.forEach(file => {
-        const index = parseInt(file.fieldname.replace('cardImage_', ''));
-        if (!isNaN(index) && cards[index]) {
-          cards[index].image = file.path;
-        }
-      });
+    // Si la imagen es base64, subirla a Cloudinary
+    for (let i = 0; i < cards.length; i++) {
+      if (cards[i].image && cards[i].image.startsWith('data:image')) {
+        const result = await cloudinary.uploader.upload(cards[i].image, {
+          folder: 'imagenes/cards',
+          public_id: `card_${Date.now()}_${i}`
+        });
+        cards[i].image = result.secure_url;
+      }
     }
 
     await home.update({ hero, cards, about });
