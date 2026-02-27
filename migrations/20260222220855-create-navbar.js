@@ -55,7 +55,7 @@ module.exports = {
       },
 
       logoActual: {
-        type: Sequelize.STRING,
+        type: Sequelize.TEXT('long'),
         allowNull: false
       },
 
