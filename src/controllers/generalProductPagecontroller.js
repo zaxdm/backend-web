@@ -1,6 +1,7 @@
 'use strict';
 
 const GeneralProductPage = require('../models/general_product_page');
+const cloudinary = require('../config/cloudinary');
 
 /**
  * Obtener General Product Page
@@ -81,25 +82,32 @@ exports.updateGeneralProductPage = async (req, res) => {
     const page = await GeneralProductPage.findOne();
 
     if (!page) {
-      return res.status(404).json({
-        message: 'No existe contenido para actualizar'
-      });
+      return res.status(404).json({ message: 'No existe contenido para actualizar' });
     }
 
-    const { headerData, infoSection, products } = req.body;
+    let { headerData, infoSection, products } = req.body;
 
-    await page.update({
-      headerData,
-      infoSection,
-      products
-    });
+    // ✅ Parsear si vienen como string (FormData)
+    if (typeof headerData === 'string') headerData = JSON.parse(headerData);
+    if (typeof infoSection === 'string') infoSection = JSON.parse(infoSection);
+    if (typeof products === 'string') products = JSON.parse(products);
 
+    // ✅ Subir imágenes base64 a Cloudinary
+    for (let i = 0; i < products.length; i++) {
+      if (products[i].image && products[i].image.startsWith('data:image')) {
+        const result = await cloudinary.uploader.upload(products[i].image, {
+          folder: 'imagenes/general-products',
+          public_id: `general_product_${Date.now()}_${i}`
+        });
+        products[i].image = result.secure_url;
+      }
+    }
+
+    await page.update({ headerData, infoSection, products });
     res.json(page);
   } catch (error) {
     console.error('Error al actualizar General Product Page:', error);
-    res.status(500).json({
-      message: 'Error interno del servidor'
-    });
+    res.status(500).json({ message: 'Error interno del servidor', error: error.message });
   }
 };
 
