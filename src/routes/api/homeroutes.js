@@ -4,7 +4,7 @@ const express = require('express');
 const router = express.Router();
 const homeController = require('../../controllers/homecontroller');
 const verificarToken = require('../../middleware/auth');
-const upload = require('../middleware/uploadCards');
+const upload = require('../../middleware/uploadCards');
 
 
 
