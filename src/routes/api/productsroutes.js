@@ -3,20 +3,13 @@
 const express = require('express');
 const router = express.Router();
 const productsController = require('../../controllers/productscontroller');
-const uploadPdf = require('../../config/uploadPdfOperaciones');
 const verificarToken = require('../../middleware/auth');
 
-// GET
+// ✅ Sin multer — todo viene como JSON
 router.get('/', productsController.getProducts);
 router.get('/:id', productsController.getProductById);
-
-// POST con subida de archivos
-router.post('/', uploadPdf.any(),verificarToken, productsController.createProduct);
-
-// PUT con subida de archivos
-router.put('/:id', uploadPdf.any(),verificarToken, productsController.updateProduct);
-
-// DELETE
-router.delete('/:id',verificarToken, productsController.deleteProduct);
+router.post('/', verificarToken, productsController.createProduct);
+router.put('/:id', verificarToken, productsController.updateProduct);
+router.delete('/:id', verificarToken, productsController.deleteProduct);
 
 module.exports = router;
