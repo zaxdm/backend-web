@@ -12,6 +12,12 @@ const sequelize = new Sequelize(
         dialect: 'mysql',
         dialectModule: mysql2,
         port: process.env.DB_PORT || 3306,
+        pool: {
+            max: 2,
+            min: 0,
+            acquire: 30000,
+            idle: 10000
+        }
     }
 );
 
