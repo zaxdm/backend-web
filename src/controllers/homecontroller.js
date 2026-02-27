@@ -1,16 +1,6 @@
 'use strict';
 
-const path = require('path');
-const multer = require('multer');
 const Home = require('../models/home');
-
-// ================= MULTER =================
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, 'uploads/cards/'),
-  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
-});
-
-exports.upload = multer({ storage });
 
 // GET /api/home
 exports.getHome = async (req, res) => {
