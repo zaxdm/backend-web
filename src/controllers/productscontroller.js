@@ -146,8 +146,11 @@ exports.updateProduct = async (req, res) => {
 
     res.json(product);
   } catch (error) {
-    console.error('Error al actualizar producto:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error('Error al actualizar producto:', error.message); 
+    console.error('Stack:', error.stack);                          
+    console.error('Body:', req.body);                              
+    console.error('Files:', req.files);                            
+    res.status(500).json({ message: 'Error interno del servidor', error: error.message });
   }
 };
 
