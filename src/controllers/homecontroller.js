@@ -41,16 +41,16 @@ exports.getHome = async (req, res) => {
 
 // PUT /api/home
 exports.updateHome = async (req, res) => {
+  console.log('BODY:', JSON.stringify(req.body));
+  console.log('FILES:', req.files);
   try {
     const home = await Home.findOne();
     if (!home) return res.status(404).json({ message: 'No existe contenido para actualizar' });
 
-    // Si viene FormData los campos llegan como string, si viene JSON llegan como objeto
     const hero  = typeof req.body.hero  === 'string' ? JSON.parse(req.body.hero)  : req.body.hero;
     const about = typeof req.body.about === 'string' ? JSON.parse(req.body.about) : req.body.about;
     const cards = typeof req.body.cards === 'string' ? JSON.parse(req.body.cards) : req.body.cards;
 
-    // Asignar URL de imagen a la card correspondiente si se subieron archivos
     if (req.files && req.files.length > 0) {
       req.files.forEach(file => {
         const index = parseInt(file.fieldname.replace('cardImage_', ''));
@@ -62,10 +62,10 @@ exports.updateHome = async (req, res) => {
 
     await home.update({ hero, cards, about });
     res.json(home);
-} catch (error) {
-  console.error('Error al actualizar Home:', error.message, error.stack);
-  res.status(500).json({ message: 'Error interno del servidor', error: error.message });
-}
+  } catch (error) {
+    console.error('Error al actualizar Home:', error.message, error.stack);
+    res.status(500).json({ message: 'Error interno del servidor', error: error.message });
+  }
 };
 
 // DELETE /api/home
