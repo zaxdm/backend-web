@@ -1,50 +1,74 @@
-// crearAdmin.js
-const bcrypt = require('bcryptjs');
-const { Sequelize, DataTypes } = require('sequelize');
+// require('dotenv').config();
+// const { Sequelize, DataTypes } = require('sequelize');
+// const bcrypt = require('bcryptjs');
 
-// Configura tu conexión a la DB igual que en tu proyecto
-const sequelize = new Sequelize('nombre_base_datos', 'usuario', 'contraseña', {
-  host: 'localhost',
-  dialect: 'mysql', // o 'postgres', según tu DB
-});
+// ── Conexión directa a Clever Cloud ──────────────────────────
+// const sequelize = new Sequelize(
+//   process.env.DB_NAME,
+//   process.env.DB_USER,
+//   process.env.DB_PASSWORD,
+//   {
+//     host:    process.env.DB_HOST,
+//     port:    process.env.DB_PORT || 3306,
+//     dialect: 'mysql',
+//     logging: false,
+//   }
+// );
 
-// Define modelo Usuario (igual que tu modelo real)
-const Usuario = sequelize.define('Usuario', {
-  codigo_dni: { type: DataTypes.STRING, allowNull: false },
-  apellidos: { type: DataTypes.STRING, allowNull: false },
-  nombres: { type: DataTypes.STRING, allowNull: false },
-  rol: { type: DataTypes.STRING, allowNull: true },
-  correo: { type: DataTypes.STRING, allowNull: true, unique: true },
-  password: { type: DataTypes.STRING, allowNull: false }
-}, {
-  tableName: 'usuarios',
-  timestamps: true
-});
+// ── Datos del usuario a crear ────────────────────────────────
+// const USUARIO = {
+//   codigo_dni: '12345678',
+//   apellidos:  'Administrador',
+//   nombres:    'Sistema',
+//   correo:     'admin@sistema.com',   // ← cambia esto
+//   password:   'Admin123',            // ← cambia esto
+//   rol:        'admin',
+//   cargo:      null,
+// };
 
-async function crearAdmin() {
-  try {
-    await sequelize.authenticate();
-    console.log('Conexión a DB exitosa');
+// ── Script ───────────────────────────────────────────────────
+// async function crearUsuario() {
+//   try {
+//     await sequelize.authenticate();
+//     console.log('✅ Conexión a la base de datos exitosa');
 
-    // Hashear la contraseña
-    const hashedPassword = await bcrypt.hash('Admin123', 10); // <-- Cambia la contraseña si quieres
+//     const hashedPassword = await bcrypt.hash(USUARIO.password, 10);
 
-    // Crear usuario admin
-    const admin = await Usuario.create({
-      codigo_dni: '00000000',
-      apellidos: 'Admin',
-      nombres: 'Admin',
-      rol: 'admin',
-      correo: 'admins@example.com',
-      password: hashedPassword
-    });
+//     const [result] = await sequelize.query(
+//       `INSERT INTO usuarios 
+//         (codigo_dni, apellidos, nombres, correo, password, rol, cargo, createdAt, updatedAt)
+//        VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+//       {
+//         replacements: [
+//           USUARIO.codigo_dni,
+//           USUARIO.apellidos,
+//           USUARIO.nombres,
+//           USUARIO.correo,
+//           hashedPassword,
+//           USUARIO.rol,
+//           USUARIO.cargo,
+//         ]
+//       }
+//     );
 
-    console.log('Usuario admin creado:', admin.toJSON());
-    process.exit(0);
-  } catch (err) {
-    console.error('Error al crear admin:', err);
-    process.exit(1);
-  }
-}
+//     console.log('✅ Usuario creado correctamente');
+//     console.log('─────────────────────────────────');
+//     console.log('  Correo  :', USUARIO.correo);
+//     console.log('  Password:', USUARIO.password);
+//     console.log('  Rol     :', USUARIO.rol);
+//     console.log('─────────────────────────────────');
+//     console.log('Ya puedes iniciar sesión con estas credenciales.');
 
-crearAdmin();
+//   } catch (error) {
+//     if (error.original?.code === 'ER_DUP_ENTRY') {
+//       console.error('❌ Ya existe un usuario con ese correo o DNI.');
+//     } else {
+//       console.error('❌ Error:', error.message);
+//     }
+//   } finally {
+//     await sequelize.close();
+//     process.exit(0);
+//   }
+// }
+
+// crearUsuario();

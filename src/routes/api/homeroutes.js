@@ -8,7 +8,7 @@ const verificarToken = require('../../middleware/auth');
 
 router.get('/', homeController.getHome);
 router.post('/',verificarToken, homeController.updateHome);
-router.put('/',verificarToken, homeController.updateHome);
+router.put('/', verificarToken, upload.any(), homeController.updateHome);
 router.delete('/',verificarToken, homeController.deleteHome);
 
 module.exports = router;

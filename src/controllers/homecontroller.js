@@ -1,6 +1,16 @@
 'use strict';
 
+const path = require('path');
+const multer = require('multer');
 const Home = require('../models/home');
+
+// ================= MULTER =================
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, 'uploads/cards/'),
+  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
+});
+
+exports.upload = multer({ storage });
 
 // GET /api/home
 exports.getHome = async (req, res) => {
@@ -8,7 +18,6 @@ exports.getHome = async (req, res) => {
     let home = await Home.findOne();
 
     if (!home) {
-      // Crear un home por defecto si no existe
       home = await Home.create({
         hero: {
           titleLines: ['LO QUE SE NECESITA', 'PARA ROMPER', 'BARRERAS'],
@@ -46,9 +55,22 @@ exports.updateHome = async (req, res) => {
     const home = await Home.findOne();
     if (!home) return res.status(404).json({ message: 'No existe contenido para actualizar' });
 
-    const { hero, cards, about } = req.body;
-    await home.update({ hero, cards, about });
+    // Si viene FormData los campos llegan como string, si viene JSON llegan como objeto
+    const hero  = typeof req.body.hero  === 'string' ? JSON.parse(req.body.hero)  : req.body.hero;
+    const about = typeof req.body.about === 'string' ? JSON.parse(req.body.about) : req.body.about;
+    const cards = typeof req.body.cards === 'string' ? JSON.parse(req.body.cards) : req.body.cards;
 
+    // Asignar URL de imagen a la card correspondiente si se subieron archivos
+    if (req.files && req.files.length > 0) {
+      req.files.forEach(file => {
+        const index = parseInt(file.fieldname.replace('cardImage_', ''));
+        if (!isNaN(index) && cards[index]) {
+          cards[index].image = `/uploads/cards/${file.filename}`;
+        }
+      });
+    }
+
+    await home.update({ hero, cards, about });
     res.json(home);
   } catch (error) {
     console.error('Error al actualizar Home:', error);
