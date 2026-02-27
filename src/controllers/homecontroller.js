@@ -65,7 +65,7 @@ exports.updateHome = async (req, res) => {
       req.files.forEach(file => {
         const index = parseInt(file.fieldname.replace('cardImage_', ''));
         if (!isNaN(index) && cards[index]) {
-          cards[index].image = `/uploads/cards/${file.filename}`;
+          cards[index].image = file.path;
         }
       });
     }
