@@ -72,10 +72,10 @@ exports.updateHome = async (req, res) => {
 
     await home.update({ hero, cards, about });
     res.json(home);
-  } catch (error) {
-    console.error('Error al actualizar Home:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
-  }
+} catch (error) {
+  console.error('Error al actualizar Home:', error.message, error.stack);
+  res.status(500).json({ message: 'Error interno del servidor', error: error.message });
+}
 };
 
 // DELETE /api/home
