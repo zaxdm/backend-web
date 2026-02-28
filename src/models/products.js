@@ -6,6 +6,12 @@ const sequelize = require('../config/sequelize');
 const Products = sequelize.define(
   'Products',
   {
+    ruta: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+      comment: 'Ruta única del producto. Debe coincidir con items[].ruta del navbar'
+    },
     title: {
       type: DataTypes.STRING,
       allowNull: false
@@ -16,31 +22,36 @@ const Products = sequelize.define(
     },
     descriptions: {
       type: DataTypes.JSON,
-      allowNull: false
+      allowNull: false,
+      defaultValue: []
     },
     mainImage: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true
     },
     thumbnails: {
       type: DataTypes.JSON,
-      allowNull: false
+      allowNull: false,
+      defaultValue: []
     },
     contactLink: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true
     },
     breadcrumbs: {
       type: DataTypes.JSON,
-      allowNull: false
+      allowNull: false,
+      defaultValue: []
     },
     features: {
       type: DataTypes.JSON,
-      allowNull: false
+      allowNull: false,
+      defaultValue: []
     },
     downloads: {
       type: DataTypes.JSON,
-      allowNull: false
+      allowNull: false,
+      defaultValue: []
     }
   },
   {

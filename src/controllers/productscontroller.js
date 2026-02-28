@@ -18,6 +18,10 @@ function parseMaybeJSON(value, fallback) {
   return value;
 }
 
+/**
+ * GET /api/products
+ * Lista todos los productos
+ */
 exports.getProducts = async (req, res) => {
   try {
     const products = await Products.findAll({ order: [['id', 'ASC']] });
@@ -28,6 +32,48 @@ exports.getProducts = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/products/by-ruta?ruta=/productos/ridgeback
+ * Busca un producto por su ruta (como lo usa el frontend).
+ * Si no existe, crea uno vacío con esa ruta (upsert implícito).
+ */
+exports.getProductByRuta = async (req, res) => {
+  try {
+    const ruta = req.query.ruta;
+
+    if (!ruta) {
+      return res.status(400).json({ message: 'El parámetro "ruta" es requerido' });
+    }
+
+    let product = await Products.findOne({ where: { ruta } });
+
+    if (!product) {
+      // Crear producto vacío para que el frontend pueda editarlo
+      product = await Products.create({
+        ruta,
+        title: '',
+        subtitle: '',
+        descriptions: [],
+        mainImage: '',
+        thumbnails: [],
+        contactLink: '',
+        breadcrumbs: [],
+        features: [],
+        downloads: []
+      });
+    }
+
+    res.json(product);
+  } catch (error) {
+    console.error('Error al obtener producto por ruta:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
+/**
+ * GET /api/products/:id
+ * Busca un producto por ID numérico
+ */
 exports.getProductById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -40,17 +86,31 @@ exports.getProductById = async (req, res) => {
   }
 };
 
+/**
+ * POST /api/products
+ * Crea un nuevo producto
+ */
 exports.createProduct = async (req, res) => {
   try {
-    let { title, subtitle, descriptions, mainImage, mainImageBase64,
-          thumbnails, thumbnailsBase64, contactLink, breadcrumbs,
-          features, downloads, downloadsBase64 } = req.body;
+    let {
+      ruta,
+      title, subtitle, descriptions,
+      mainImage, mainImageBase64,
+      thumbnails, thumbnailsBase64,
+      contactLink, breadcrumbs,
+      features, downloads, downloadsBase64
+    } = req.body;
 
-    descriptions = parseMaybeJSON(descriptions, []);
-    thumbnails   = parseMaybeJSON(thumbnails, []);
-    breadcrumbs  = parseMaybeJSON(breadcrumbs, []);
-    features     = parseMaybeJSON(features, []);
-    downloads    = parseMaybeJSON(downloads, []);
+    if (!ruta) return res.status(400).json({ message: 'El campo "ruta" es requerido' });
+
+    const existing = await Products.findOne({ where: { ruta } });
+    if (existing) return res.status(400).json({ message: 'Ya existe un producto con esa ruta. Usa PUT para actualizar.' });
+
+    descriptions    = parseMaybeJSON(descriptions, []);
+    thumbnails      = parseMaybeJSON(thumbnails, []);
+    breadcrumbs     = parseMaybeJSON(breadcrumbs, []);
+    features        = parseMaybeJSON(features, []);
+    downloads       = parseMaybeJSON(downloads, []);
     thumbnailsBase64 = parseMaybeJSON(thumbnailsBase64, []);
     downloadsBase64  = parseMaybeJSON(downloadsBase64, []);
 
@@ -86,8 +146,9 @@ exports.createProduct = async (req, res) => {
     }
 
     const product = await Products.create({
-      title, subtitle, descriptions, mainImage,
-      thumbnails, contactLink, breadcrumbs, features, downloads
+      ruta, title, subtitle, descriptions,
+      mainImage, thumbnails, contactLink,
+      breadcrumbs, features, downloads
     });
 
     res.status(201).json(product);
@@ -97,25 +158,38 @@ exports.createProduct = async (req, res) => {
   }
 };
 
-exports.updateProduct = async (req, res) => {
+/**
+ * PUT /api/products/by-ruta?ruta=/productos/ridgeback
+ * Actualiza un producto buscándolo por ruta (como lo usa el frontend).
+ * Si no existe, lo crea (upsert).
+ */
+exports.updateProductByRuta = async (req, res) => {
   try {
-    const { id } = req.params;
-    const product = await Products.findByPk(id);
-    if (!product) return res.status(404).json({ message: 'Producto no encontrado' });
+    const ruta = req.query.ruta;
 
-    let { title, subtitle, descriptions, mainImage, mainImageBase64,
-          thumbnails, thumbnailsBase64, contactLink, breadcrumbs,
-          features, downloads, downloadsBase64 } = req.body;
+    if (!ruta) return res.status(400).json({ message: 'El parámetro "ruta" es requerido' });
 
-    descriptions = parseMaybeJSON(descriptions, product.descriptions || []);
-    thumbnails   = parseMaybeJSON(thumbnails,   product.thumbnails   || []);
-    breadcrumbs  = parseMaybeJSON(breadcrumbs,  product.breadcrumbs  || []);
-    features     = parseMaybeJSON(features,     product.features     || []);
-    downloads    = parseMaybeJSON(downloads,    product.downloads    || []);
+    let product = await Products.findOne({ where: { ruta } });
+
+    let {
+      title, subtitle, descriptions,
+      mainImage, mainImageBase64,
+      thumbnails, thumbnailsBase64,
+      contactLink, breadcrumbs,
+      features, downloads, downloadsBase64
+    } = req.body;
+
+    const current = product || {};
+
+    descriptions    = parseMaybeJSON(descriptions,    current.descriptions    || []);
+    thumbnails      = parseMaybeJSON(thumbnails,      current.thumbnails      || []);
+    breadcrumbs     = parseMaybeJSON(breadcrumbs,     current.breadcrumbs     || []);
+    features        = parseMaybeJSON(features,        current.features        || []);
+    downloads       = parseMaybeJSON(downloads,       current.downloads       || []);
     thumbnailsBase64 = parseMaybeJSON(thumbnailsBase64, []);
     downloadsBase64  = parseMaybeJSON(downloadsBase64,  []);
 
-    // ✅ Imagen principal
+    // Imagen principal base64
     if (mainImageBase64) {
       mainImage = await uploadBase64(mainImageBase64, {
         folder: 'imagenes/products',
@@ -123,7 +197,7 @@ exports.updateProduct = async (req, res) => {
       });
     }
 
-    // ✅ Thumbnails
+    // Thumbnails base64
     for (let i = 0; i < thumbnailsBase64.length; i++) {
       if (thumbnailsBase64[i]) {
         thumbnails[i] = await uploadBase64(thumbnailsBase64[i], {
@@ -133,7 +207,80 @@ exports.updateProduct = async (req, res) => {
       }
     }
 
-    // ✅ PDFs
+    // PDFs base64
+    for (let i = 0; i < downloadsBase64.length; i++) {
+      if (downloadsBase64[i]) {
+        const url = await uploadBase64(downloadsBase64[i], {
+          folder: 'pdf',
+          resource_type: 'raw',
+          public_id: `doc_${Date.now()}_${i}`
+        });
+        if (!downloads[i]) downloads[i] = { title: '', description: '', link: '' };
+        downloads[i].link = url;
+      }
+    }
+
+    const data = {
+      ruta, title, subtitle, descriptions,
+      mainImage, thumbnails, contactLink,
+      breadcrumbs, features, downloads
+    };
+
+    if (product) {
+      await product.update(data);
+    } else {
+      product = await Products.create(data);
+    }
+
+    res.json(product);
+  } catch (error) {
+    console.error('Error al actualizar producto por ruta:', error.message);
+    res.status(500).json({ message: 'Error interno del servidor', error: error.message });
+  }
+};
+
+/**
+ * PUT /api/products/:id
+ * Actualiza un producto por ID numérico (mantener compatibilidad)
+ */
+exports.updateProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const product = await Products.findByPk(id);
+    if (!product) return res.status(404).json({ message: 'Producto no encontrado' });
+
+    let {
+      ruta, title, subtitle, descriptions,
+      mainImage, mainImageBase64,
+      thumbnails, thumbnailsBase64,
+      contactLink, breadcrumbs,
+      features, downloads, downloadsBase64
+    } = req.body;
+
+    descriptions    = parseMaybeJSON(descriptions,    product.descriptions    || []);
+    thumbnails      = parseMaybeJSON(thumbnails,      product.thumbnails      || []);
+    breadcrumbs     = parseMaybeJSON(breadcrumbs,     product.breadcrumbs     || []);
+    features        = parseMaybeJSON(features,        product.features        || []);
+    downloads       = parseMaybeJSON(downloads,       product.downloads       || []);
+    thumbnailsBase64 = parseMaybeJSON(thumbnailsBase64, []);
+    downloadsBase64  = parseMaybeJSON(downloadsBase64,  []);
+
+    if (mainImageBase64) {
+      mainImage = await uploadBase64(mainImageBase64, {
+        folder: 'imagenes/products',
+        public_id: `main_${Date.now()}`
+      });
+    }
+
+    for (let i = 0; i < thumbnailsBase64.length; i++) {
+      if (thumbnailsBase64[i]) {
+        thumbnails[i] = await uploadBase64(thumbnailsBase64[i], {
+          folder: 'imagenes/products',
+          public_id: `thumb_${Date.now()}_${i}`
+        });
+      }
+    }
+
     for (let i = 0; i < downloadsBase64.length; i++) {
       if (downloadsBase64[i]) {
         const url = await uploadBase64(downloadsBase64[i], {
@@ -147,8 +294,9 @@ exports.updateProduct = async (req, res) => {
     }
 
     await product.update({
-      title, subtitle, descriptions, mainImage,
-      thumbnails, contactLink, breadcrumbs, features, downloads
+      ruta, title, subtitle, descriptions,
+      mainImage, thumbnails, contactLink,
+      breadcrumbs, features, downloads
     });
 
     res.json(product);
@@ -158,6 +306,9 @@ exports.updateProduct = async (req, res) => {
   }
 };
 
+/**
+ * DELETE /api/products/:id
+ */
 exports.deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;

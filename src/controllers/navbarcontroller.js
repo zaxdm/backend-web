@@ -21,10 +21,11 @@ exports.getNavbar = async (req, res) => {
         ],
         productosMenu: [
           {
-            titulo: 'Brocas Tricónicas', ruta: '/productos/general',
+            titulo: 'Brocas Tricónicas',
+            ruta: '/productos/general',
             items: [
-              { nombre: 'RIDGEBACK™ – Perforación en roca dura', ruta: '/productos' },
-              { nombre: 'AVENGER™ – Perforación de alto rendimiento', ruta: '/productos' }
+              { nombre: 'RIDGEBACK™ – Perforación en roca dura', ruta: '/productos/ridgeback' },
+              { nombre: 'AVENGER™ – Perforación de alto rendimiento', ruta: '/productos/avenger' }
             ]
           }
         ],
@@ -48,13 +49,20 @@ exports.createNavbar = async (req, res) => {
     const existing = await Navbar.findOne();
     if (existing) return res.status(400).json({ message: 'El Navbar ya existe. Usa update.' });
 
-    const { productosLabel, aboutLabel, contactoLabel, contactoRuta, siguenos, buscarPlaceholder, aboutMenu, productosMenu, redes, logoActual } = req.body;
+    const {
+      productosLabel, aboutLabel, contactoLabel, contactoRuta,
+      siguenos, buscarPlaceholder, aboutMenu, productosMenu, redes, logoActual
+    } = req.body;
 
-    if (!productosLabel || !aboutLabel || !contactoLabel || !contactoRuta || !siguenos || !buscarPlaceholder || !aboutMenu || !productosMenu || !redes || !logoActual) {
+    if (!productosLabel || !aboutLabel || !contactoLabel || !contactoRuta ||
+        !siguenos || !buscarPlaceholder || !aboutMenu || !productosMenu || !redes || !logoActual) {
       return res.status(400).json({ message: 'Todos los campos son requeridos' });
     }
 
-    const navbar = await Navbar.create({ productosLabel, aboutLabel, contactoLabel, contactoRuta, siguenos, buscarPlaceholder, aboutMenu, productosMenu, redes, logoActual });
+    const navbar = await Navbar.create({
+      productosLabel, aboutLabel, contactoLabel, contactoRuta,
+      siguenos, buscarPlaceholder, aboutMenu, productosMenu, redes, logoActual
+    });
     res.status(201).json(navbar);
   } catch (error) {
     console.error('Error al crear Navbar:', error);
@@ -67,7 +75,10 @@ exports.updateNavbar = async (req, res) => {
     const navbar = await Navbar.findOne();
     if (!navbar) return res.status(404).json({ message: 'No existe contenido para actualizar' });
 
-    let { productosLabel, aboutLabel, contactoLabel, contactoRuta, siguenos, buscarPlaceholder, aboutMenu, productosMenu, redes, logoActual } = req.body;
+    let {
+      productosLabel, aboutLabel, contactoLabel, contactoRuta,
+      siguenos, buscarPlaceholder, aboutMenu, productosMenu, redes, logoActual
+    } = req.body;
 
     // Si el logo es base64, subirlo a Cloudinary
     if (logoActual && logoActual.startsWith('data:image')) {
@@ -78,7 +89,10 @@ exports.updateNavbar = async (req, res) => {
       logoActual = result.secure_url;
     }
 
-    await navbar.update({ productosLabel, aboutLabel, contactoLabel, contactoRuta, siguenos, buscarPlaceholder, aboutMenu, productosMenu, redes, logoActual });
+    await navbar.update({
+      productosLabel, aboutLabel, contactoLabel, contactoRuta,
+      siguenos, buscarPlaceholder, aboutMenu, productosMenu, redes, logoActual
+    });
     res.json(navbar);
   } catch (error) {
     console.error('Error al actualizar Navbar:', error);
@@ -90,7 +104,6 @@ exports.deleteNavbar = async (req, res) => {
   try {
     const navbar = await Navbar.findOne();
     if (!navbar) return res.status(404).json({ message: 'No existe contenido para eliminar' });
-
     await navbar.destroy();
     res.json({ message: 'Navbar eliminado correctamente' });
   } catch (error) {

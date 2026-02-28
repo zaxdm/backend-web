@@ -8,6 +8,12 @@ module.exports = {
         autoIncrement: true,
         primaryKey: true
       },
+      categoryKey: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        unique: true,
+        comment: 'Ruta de la categoría del navbar, ej: /productos/general'
+      },
       headerData: {
         type: Sequelize.JSON,
         allowNull: false
