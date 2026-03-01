@@ -2,7 +2,7 @@
 
 const GeneralProductPage = require('../models/general_product_page');
 const cloudinary = require('../config/cloudinary');
-const { withDB } = require('../config/database'); // ← ajusta la ruta si es diferente
+const { withDB } = require('../config/sequelize');
 
 exports.getAllGeneralProductPages = async (req, res) => {
   try {

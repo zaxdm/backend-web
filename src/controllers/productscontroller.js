@@ -2,7 +2,7 @@
 
 const Products = require('../models/products');
 const cloudinary = require('../config/cloudinary');
-const { withDB } = require('../config/database'); // ← ajusta la ruta si es diferente
+const { withDB } = require('../config/sequelize');
 
 const uploadBase64 = (base64, options) => new Promise((resolve, reject) => {
   cloudinary.uploader.upload(base64, options, (err, result) => {
