@@ -1,148 +1,71 @@
 'use strict';
 
 const Noticias = require('../models/noticias');
+const { withDB } = require('../config/sequelize');
 
-/**
- * Obtener todas las noticias
- */
 exports.getNoticias = async (req, res) => {
   try {
-    const noticias = await Noticias.findAll({
-      order: [['fechaPublicacion', 'DESC']]
-    });
+    const noticias = await withDB(() => Noticias.findAll({ order: [['fechaPublicacion', 'DESC']] }));
     res.json(noticias);
   } catch (error) {
-    console.error('Error al obtener noticias:', error);
-    res.status(500).json({
-      message: 'Error interno del servidor'
-    });
+    console.error('Error al obtener noticias:', error.message);
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
 };
 
-/**
- * Obtener una noticia por ID
- */
 exports.getNoticiaById = async (req, res) => {
   try {
-    const { id } = req.params;
-    const noticia = await Noticias.findByPk(id);
-
-    if (!noticia) {
-      return res.status(404).json({ message: 'Noticia no encontrada' });
-    }
-
+    const noticia = await withDB(() => Noticias.findByPk(req.params.id));
+    if (!noticia) return res.status(404).json({ message: 'Noticia no encontrada' });
     res.json(noticia);
   } catch (error) {
-    console.error('Error al obtener noticia:', error);
+    console.error('Error al obtener noticia:', error.message);
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 };
 
-/**
- * Crear noticia
- */
 exports.createNoticia = async (req, res) => {
   try {
-    const {
-      categoria,
-      titulo,
-      fechaPublicacion,
-      parrafos,
-      contactoNombre,
-      contactoEmail,
-      firmaNombre,
-      firmaCargo
-    } = req.body;
-
-    if (
-      !categoria ||
-      !titulo ||
-      !fechaPublicacion ||
-      !parrafos ||
-      !contactoNombre ||
-      !contactoEmail ||
-      !firmaNombre ||
-      !firmaCargo
-    ) {
+    const { categoria, titulo, fechaPublicacion, parrafos, contactoNombre, contactoEmail, firmaNombre, firmaCargo } = req.body;
+    if (!categoria || !titulo || !fechaPublicacion || !parrafos || !contactoNombre || !contactoEmail || !firmaNombre || !firmaCargo) {
       return res.status(400).json({ message: 'Todos los campos son requeridos' });
     }
-
-    const noticia = await Noticias.create({
-      categoria,
-      titulo,
-      fechaPublicacion,
-      parrafos,
-      contactoNombre,
-      contactoEmail,
-      firmaNombre,
-      firmaCargo
-    });
-
+    const noticia = await withDB(() => Noticias.create({ categoria, titulo, fechaPublicacion, parrafos, contactoNombre, contactoEmail, firmaNombre, firmaCargo }));
     res.status(201).json(noticia);
   } catch (error) {
-    console.error('Error al crear noticia:', error);
+    console.error('Error al crear noticia:', error.message);
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 };
 
-/**
- * Actualizar noticia
- */
 exports.updateNoticia = async (req, res) => {
   try {
-    const { id } = req.params;
-    const noticia = await Noticias.findByPk(id);
-
-    if (!noticia) {
-      return res.status(404).json({ message: 'Noticia no encontrada' });
-    }
-
-    const {
-      categoria,
-      titulo,
-      fechaPublicacion,
-      parrafos,
-      contactoNombre,
-      contactoEmail,
-      firmaNombre,
-      firmaCargo
-    } = req.body;
-
-    await noticia.update({
-      categoria,
-      titulo,
-      fechaPublicacion,
-      parrafos,
-      contactoNombre,
-      contactoEmail,
-      firmaNombre,
-      firmaCargo
+    const { categoria, titulo, fechaPublicacion, parrafos, contactoNombre, contactoEmail, firmaNombre, firmaCargo } = req.body;
+    const noticia = await withDB(async () => {
+      const found = await Noticias.findByPk(req.params.id);
+      if (!found) throw Object.assign(new Error('Noticia no encontrada'), { status: 404 });
+      await found.update({ categoria, titulo, fechaPublicacion, parrafos, contactoNombre, contactoEmail, firmaNombre, firmaCargo });
+      return found;
     });
-
     res.json(noticia);
   } catch (error) {
-    console.error('Error al actualizar noticia:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    const status = error.status ?? 500;
+    console.error('Error al actualizar noticia:', error.message);
+    res.status(status).json({ message: error.message });
   }
 };
 
-/**
- * Eliminar noticia
- */
 exports.deleteNoticia = async (req, res) => {
   try {
-    const { id } = req.params;
-    const noticia = await Noticias.findByPk(id);
-
-    if (!noticia) {
-      return res.status(404).json({ message: 'Noticia no encontrada' });
-    }
-
-    await noticia.destroy();
-
+    await withDB(async () => {
+      const found = await Noticias.findByPk(req.params.id);
+      if (!found) throw Object.assign(new Error('Noticia no encontrada'), { status: 404 });
+      await found.destroy();
+    });
     res.json({ message: 'Noticia eliminada correctamente' });
   } catch (error) {
-    console.error('Error al eliminar noticia:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    const status = error.status ?? 500;
+    console.error('Error al eliminar noticia:', error.message);
+    res.status(status).json({ message: error.message });
   }
 };
