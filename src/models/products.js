@@ -1,5 +1,4 @@
 'use strict';
-
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/sequelize');
 
@@ -14,11 +13,13 @@ const Products = sequelize.define(
     },
     title: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: true,   // ← era false, causaba error al crear producto vacío
+      defaultValue: ''
     },
     subtitle: {
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: true,
+      defaultValue: ''
     },
     descriptions: {
       type: DataTypes.JSON,
@@ -27,7 +28,8 @@ const Products = sequelize.define(
     },
     mainImage: {
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: true,
+      defaultValue: ''
     },
     thumbnails: {
       type: DataTypes.JSON,
@@ -36,7 +38,8 @@ const Products = sequelize.define(
     },
     contactLink: {
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: true,
+      defaultValue: ''
     },
     breadcrumbs: {
       type: DataTypes.JSON,
