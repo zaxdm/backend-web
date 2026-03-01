@@ -19,6 +19,21 @@ function parseMaybeJSON(value, fallback) {
 }
 
 /**
+ * Limpia un nombre de archivo para usarlo como public_id en Cloudinary.
+ * Quita la extensión, reemplaza espacios y caracteres especiales por guiones.
+ */
+function sanitizeFilename(filename) {
+  if (!filename) return `doc_${Date.now()}`;
+  return filename
+    .replace(/\.[^/.]+$/, '')        // quitar extensión (.pdf, .docx, etc.)
+    .replace(/[^a-zA-Z0-9_-]/g, '-') // reemplazar caracteres especiales por guión
+    .replace(/-+/g, '-')             // colapsar guiones múltiples
+    .replace(/^-|-$/g, '')           // quitar guiones al inicio/fin
+    .toLowerCase()
+    || `doc_${Date.now()}`;
+}
+
+/**
  * GET /api/products
  * Lista todos los productos
  */
@@ -48,7 +63,6 @@ exports.getProductByRuta = async (req, res) => {
     let product = await Products.findOne({ where: { ruta } });
 
     if (!product) {
-      // Crear producto vacío para que el frontend pueda editarlo
       product = await Products.create({
         ruta,
         title: '',
@@ -72,7 +86,6 @@ exports.getProductByRuta = async (req, res) => {
 
 /**
  * GET /api/products/:id
- * Busca un producto por ID numérico
  */
 exports.getProductById = async (req, res) => {
   try {
@@ -88,7 +101,6 @@ exports.getProductById = async (req, res) => {
 
 /**
  * POST /api/products
- * Crea un nuevo producto
  */
 exports.createProduct = async (req, res) => {
   try {
@@ -98,7 +110,8 @@ exports.createProduct = async (req, res) => {
       mainImage, mainImageBase64,
       thumbnails, thumbnailsBase64,
       contactLink, breadcrumbs,
-      features, downloads, downloadsBase64
+      features, downloads, downloadsBase64,
+      downloadsFileNames  // ← nuevo: nombres originales de los PDFs
     } = req.body;
 
     if (!ruta) return res.status(400).json({ message: 'El campo "ruta" es requerido' });
@@ -106,15 +119,15 @@ exports.createProduct = async (req, res) => {
     const existing = await Products.findOne({ where: { ruta } });
     if (existing) return res.status(400).json({ message: 'Ya existe un producto con esa ruta. Usa PUT para actualizar.' });
 
-    descriptions    = parseMaybeJSON(descriptions, []);
-    thumbnails      = parseMaybeJSON(thumbnails, []);
-    breadcrumbs     = parseMaybeJSON(breadcrumbs, []);
-    features        = parseMaybeJSON(features, []);
-    downloads       = parseMaybeJSON(downloads, []);
+    descriptions     = parseMaybeJSON(descriptions, []);
+    thumbnails       = parseMaybeJSON(thumbnails, []);
+    breadcrumbs      = parseMaybeJSON(breadcrumbs, []);
+    features         = parseMaybeJSON(features, []);
+    downloads        = parseMaybeJSON(downloads, []);
     thumbnailsBase64 = parseMaybeJSON(thumbnailsBase64, []);
     downloadsBase64  = parseMaybeJSON(downloadsBase64, []);
+    downloadsFileNames = parseMaybeJSON(downloadsFileNames, []);
 
-    // Imagen principal
     if (mainImageBase64) {
       mainImage = await uploadBase64(mainImageBase64, {
         folder: 'imagenes/products',
@@ -122,7 +135,6 @@ exports.createProduct = async (req, res) => {
       });
     }
 
-    // Thumbnails
     for (let i = 0; i < thumbnailsBase64.length; i++) {
       if (thumbnailsBase64[i]) {
         thumbnails[i] = await uploadBase64(thumbnailsBase64[i], {
@@ -132,13 +144,16 @@ exports.createProduct = async (req, res) => {
       }
     }
 
-    // PDFs
     for (let i = 0; i < downloadsBase64.length; i++) {
       if (downloadsBase64[i]) {
+        const originalName = downloadsFileNames[i] || '';
+        const publicId = sanitizeFilename(originalName) || `doc_${Date.now()}_${i}`;
         const url = await uploadBase64(downloadsBase64[i], {
           folder: 'pdf',
           resource_type: 'raw',
-          public_id: `doc_${Date.now()}_${i}`
+          public_id: publicId,
+          use_filename: true,
+          unique_filename: false
         });
         if (!downloads[i]) downloads[i] = { title: '', description: '', link: '' };
         downloads[i].link = url;
@@ -160,8 +175,6 @@ exports.createProduct = async (req, res) => {
 
 /**
  * PUT /api/products/by-ruta?ruta=/productos/ridgeback
- * Actualiza un producto buscándolo por ruta (como lo usa el frontend).
- * Si no existe, lo crea (upsert).
  */
 exports.updateProductByRuta = async (req, res) => {
   try {
@@ -176,20 +189,21 @@ exports.updateProductByRuta = async (req, res) => {
       mainImage, mainImageBase64,
       thumbnails, thumbnailsBase64,
       contactLink, breadcrumbs,
-      features, downloads, downloadsBase64
+      features, downloads, downloadsBase64,
+      downloadsFileNames  // ← nuevo
     } = req.body;
 
     const current = product || {};
 
-    descriptions    = parseMaybeJSON(descriptions,    current.descriptions    || []);
-    thumbnails      = parseMaybeJSON(thumbnails,      current.thumbnails      || []);
-    breadcrumbs     = parseMaybeJSON(breadcrumbs,     current.breadcrumbs     || []);
-    features        = parseMaybeJSON(features,        current.features        || []);
-    downloads       = parseMaybeJSON(downloads,       current.downloads       || []);
+    descriptions     = parseMaybeJSON(descriptions,    current.descriptions    || []);
+    thumbnails       = parseMaybeJSON(thumbnails,      current.thumbnails      || []);
+    breadcrumbs      = parseMaybeJSON(breadcrumbs,     current.breadcrumbs     || []);
+    features         = parseMaybeJSON(features,        current.features        || []);
+    downloads        = parseMaybeJSON(downloads,       current.downloads       || []);
     thumbnailsBase64 = parseMaybeJSON(thumbnailsBase64, []);
     downloadsBase64  = parseMaybeJSON(downloadsBase64,  []);
+    downloadsFileNames = parseMaybeJSON(downloadsFileNames, []);
 
-    // Imagen principal base64
     if (mainImageBase64) {
       mainImage = await uploadBase64(mainImageBase64, {
         folder: 'imagenes/products',
@@ -197,7 +211,6 @@ exports.updateProductByRuta = async (req, res) => {
       });
     }
 
-    // Thumbnails base64
     for (let i = 0; i < thumbnailsBase64.length; i++) {
       if (thumbnailsBase64[i]) {
         thumbnails[i] = await uploadBase64(thumbnailsBase64[i], {
@@ -207,13 +220,16 @@ exports.updateProductByRuta = async (req, res) => {
       }
     }
 
-    // PDFs base64
     for (let i = 0; i < downloadsBase64.length; i++) {
       if (downloadsBase64[i]) {
+        const originalName = downloadsFileNames[i] || '';
+        const publicId = sanitizeFilename(originalName) || `doc_${Date.now()}_${i}`;
         const url = await uploadBase64(downloadsBase64[i], {
           folder: 'pdf',
           resource_type: 'raw',
-          public_id: `doc_${Date.now()}_${i}`
+          public_id: publicId,
+          use_filename: true,
+          unique_filename: false
         });
         if (!downloads[i]) downloads[i] = { title: '', description: '', link: '' };
         downloads[i].link = url;
@@ -241,7 +257,6 @@ exports.updateProductByRuta = async (req, res) => {
 
 /**
  * PUT /api/products/:id
- * Actualiza un producto por ID numérico (mantener compatibilidad)
  */
 exports.updateProduct = async (req, res) => {
   try {
@@ -254,16 +269,18 @@ exports.updateProduct = async (req, res) => {
       mainImage, mainImageBase64,
       thumbnails, thumbnailsBase64,
       contactLink, breadcrumbs,
-      features, downloads, downloadsBase64
+      features, downloads, downloadsBase64,
+      downloadsFileNames  // ← nuevo
     } = req.body;
 
-    descriptions    = parseMaybeJSON(descriptions,    product.descriptions    || []);
-    thumbnails      = parseMaybeJSON(thumbnails,      product.thumbnails      || []);
-    breadcrumbs     = parseMaybeJSON(breadcrumbs,     product.breadcrumbs     || []);
-    features        = parseMaybeJSON(features,        product.features        || []);
-    downloads       = parseMaybeJSON(downloads,       product.downloads       || []);
+    descriptions     = parseMaybeJSON(descriptions,    product.descriptions    || []);
+    thumbnails       = parseMaybeJSON(thumbnails,      product.thumbnails      || []);
+    breadcrumbs      = parseMaybeJSON(breadcrumbs,     product.breadcrumbs     || []);
+    features         = parseMaybeJSON(features,        product.features        || []);
+    downloads        = parseMaybeJSON(downloads,       product.downloads       || []);
     thumbnailsBase64 = parseMaybeJSON(thumbnailsBase64, []);
     downloadsBase64  = parseMaybeJSON(downloadsBase64,  []);
+    downloadsFileNames = parseMaybeJSON(downloadsFileNames, []);
 
     if (mainImageBase64) {
       mainImage = await uploadBase64(mainImageBase64, {
@@ -283,10 +300,14 @@ exports.updateProduct = async (req, res) => {
 
     for (let i = 0; i < downloadsBase64.length; i++) {
       if (downloadsBase64[i]) {
+        const originalName = downloadsFileNames[i] || '';
+        const publicId = sanitizeFilename(originalName) || `doc_${Date.now()}_${i}`;
         const url = await uploadBase64(downloadsBase64[i], {
           folder: 'pdf',
           resource_type: 'raw',
-          public_id: `doc_${Date.now()}_${i}`
+          public_id: publicId,
+          use_filename: true,
+          unique_filename: false
         });
         if (!downloads[i]) downloads[i] = { title: '', description: '', link: '' };
         downloads[i].link = url;
