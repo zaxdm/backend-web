@@ -1,3 +1,4 @@
+'use strict';
 const { Sequelize } = require('sequelize');
 const mysql2 = require('mysql2');
 require('dotenv').config();
@@ -13,11 +14,11 @@ if (!global._sequelize) {
       dialect: 'mysql',
       dialectModule: mysql2,
       pool: {
-        max: 1,
+        max: 2,
         min: 0,
         acquire: 30000,
-        idle: 0,      // ← era 10000, ahora libera inmediatamente
-        evict: 500    // ← era 10000, ahora limpia rápido
+        idle: 10000,
+        evict: 10000
       },
       dialectOptions: { connectTimeout: 20000 },
       logging: false
@@ -28,14 +29,7 @@ if (!global._sequelize) {
 const sequelize = global._sequelize;
 
 const withDB = async (fn) => {
-  try {
-    return await fn(sequelize);
-  } finally {
-    try {
-      await sequelize.connectionManager.pool.drain();
-      sequelize.connectionManager.pool.clear();
-    } catch (_) {}
-  }
+  return await fn(sequelize);
 };
 
 module.exports = sequelize;
