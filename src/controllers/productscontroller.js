@@ -8,7 +8,9 @@ const uploadBase64 = (base64, options) => new Promise((resolve, reject) => {
   cloudinary.uploader.upload(base64, options, (err, result) => {
     if (err) reject(err); else resolve(result.secure_url);
   });
-});
+}); 
+    
+
 
 function parseMaybeJSON(value, fallback) {
   if (value == null) return fallback;
