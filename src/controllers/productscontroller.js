@@ -328,7 +328,7 @@ exports.updateProduct = async (req, res) => {
 };
 
 /**
- * DELETE /api/products/:id
+ * DELETE /api/products/:id  
  */
 exports.deleteProduct = async (req, res) => {
   try {
