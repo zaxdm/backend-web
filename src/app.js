@@ -6,11 +6,6 @@ const routes = require('./routes');
 const swaggerUI = require('swagger-ui-express');
 const swaggerDocument = require('../swagger.json');
 
-// ✅ ELIMINA el sync de aquí — ya lo maneja el controller con flag tableReady
-// ❌ BORRA ESTO:
-// const MailConfig = require('./models/mail_config');
-// MailConfig.sync({ alter: true })...
-
 app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
