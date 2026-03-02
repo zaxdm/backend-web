@@ -29,6 +29,6 @@ router.use('/navbar', navbarRoutes);
 router.use('/noticias', noticiasRoutes);
 router.use('/products', productsRoutes);
 router.post('/login', authController.autenticarUsuario);
-router.use('/api/contact-mail', contactMailRoutes);
+router.use('/contact-mail', contactMailRoutes);
 
 module.exports = router;
