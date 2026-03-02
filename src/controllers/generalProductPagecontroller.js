@@ -4,10 +4,28 @@ const GeneralProductPage = require('../models/general_product_page');
 const cloudinary = require('../config/cloudinary');
 const { withDB } = require('../config/sequelize');
 
+function parseJSON(value, fallback) {
+  if (value == null) return fallback;
+  if (typeof value === 'string') {
+    try { return JSON.parse(value); } catch { return fallback; }
+  }
+  return value;
+}
+
+function serializePage(page) {
+  const raw = page.toJSON();
+  return {
+    ...raw,
+    headerData:  parseJSON(raw.headerData,  { titulo: '', descripcion: '', breadcrumbs: [] }),
+    infoSection: parseJSON(raw.infoSection, { texto: '', boton: { label: '', link: '' } }),
+    products:    parseJSON(raw.products,    []),
+  };
+}
+
 exports.getAllGeneralProductPages = async (req, res) => {
   try {
     const pages = await withDB(() => GeneralProductPage.findAll());
-    res.json(pages);
+    res.json(pages.map(serializePage));
   } catch (error) {
     console.error('Error al obtener General Product Pages:', error.message);
     res.status(500).json({ message: 'Error interno del servidor' });
@@ -34,7 +52,7 @@ exports.getGeneralProductPage = async (req, res) => {
       return found;
     });
 
-    res.json(page);
+    res.json(serializePage(page));
   } catch (error) {
     console.error('Error al obtener General Product Page:', error.message);
     res.status(500).json({ message: 'Error interno del servidor', error: error.message });
@@ -50,9 +68,9 @@ exports.updateGeneralProductPage = async (req, res) => {
 
     let { headerData, infoSection, products } = req.body;
 
-    if (typeof headerData  === 'string') headerData  = JSON.parse(headerData);
-    if (typeof infoSection === 'string') infoSection = JSON.parse(infoSection);
-    if (typeof products    === 'string') products    = JSON.parse(products);
+    headerData  = parseJSON(headerData,  {});
+    infoSection = parseJSON(infoSection, {});
+    products    = parseJSON(products,    []);
 
     // Subir imágenes base64 a Cloudinary (fuera del withDB)
     for (let i = 0; i < products.length; i++) {
@@ -75,7 +93,7 @@ exports.updateGeneralProductPage = async (req, res) => {
       }
     });
 
-    res.json(page);
+    res.json(serializePage(page));
   } catch (error) {
     console.error('Error al actualizar General Product Page:', error.message);
     res.status(500).json({ message: 'Error interno del servidor', error: error.message });
