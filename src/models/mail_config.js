@@ -1,23 +1,36 @@
-'use strict';
-const { DataTypes } = require('sequelize');
-const sequelize = require('../config/sequelize');
-
-const MailConfig = sequelize.define(
-  'MailConfig',
-  {
+module.exports = (sequelize, DataTypes) => {
+  const MailConfig = sequelize.define('MailConfig', {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: false,
+      defaultValue: 1
+    },
     mailUser: {
-      type: DataTypes.STRING,
-      allowNull: false
+      type: DataTypes.STRING(255),
+      allowNull: false,
+      validate: {
+        isEmail: true
+      }
     },
     mailPass: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(255),
       allowNull: false
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+      onUpdate: DataTypes.NOW
     }
-  },
-  {
+  }, {
     tableName: 'mail_config',
-    timestamps: true
-  }
-);
+    timestamps: true,
+    freezeTableName: true
+  });
 
-module.exports = MailConfig;
+  return MailConfig;
+};

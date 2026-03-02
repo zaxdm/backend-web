@@ -7,17 +7,28 @@ exports.getMailConfig = async (req, res) => {
     const config = await MailConfig.findOne({ where: { id: 1 } });
     
     if (!config) {
-      return res.status(404).json({ message: 'Configuración no encontrada' });
+      console.log('⚠️ Configuración no encontrada - devolviendo vacío');
+      return res.status(200).json({
+        mailUser: '',
+        message: 'Sin configuración previa'
+      });
     }
 
+    console.log('✅ Configuración cargada:', config.mailUser);
+    
     // No enviar la contraseña al frontend
-    res.json({
+    res.status(200).json({
       mailUser: config.mailUser,
       // mailPass no se devuelve por seguridad
+      success: true
     });
   } catch (error) {
-    console.error('Error al obtener configuración:', error);
-    res.status(500).json({ message: 'Error al obtener configuración', error: error.message });
+    console.error('❌ Error al obtener configuración:', error.message);
+    res.status(500).json({ 
+      message: 'Error al obtener configuración', 
+      error: error.message,
+      success: false
+    });
   }
 };
 
