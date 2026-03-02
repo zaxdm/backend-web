@@ -16,7 +16,10 @@ exports.getAllGeneralProductPages = async (req, res) => {
 
 exports.getGeneralProductPage = async (req, res) => {
   try {
-    const categoryKey = decodeURIComponent(req.params.categoryKey);
+    const categoryKey = req.query.categoryKey;
+    if (!categoryKey) {
+      return res.status(400).json({ message: 'El parámetro "categoryKey" es requerido' });
+    }
 
     const page = await withDB(async () => {
       let found = await GeneralProductPage.findOne({ where: { categoryKey } });
@@ -40,7 +43,10 @@ exports.getGeneralProductPage = async (req, res) => {
 
 exports.updateGeneralProductPage = async (req, res) => {
   try {
-    const categoryKey = decodeURIComponent(req.params.categoryKey);
+    const categoryKey = req.query.categoryKey;
+    if (!categoryKey) {
+      return res.status(400).json({ message: 'El parámetro "categoryKey" es requerido' });
+    }
 
     let { headerData, infoSection, products } = req.body;
 
@@ -48,7 +54,7 @@ exports.updateGeneralProductPage = async (req, res) => {
     if (typeof infoSection === 'string') infoSection = JSON.parse(infoSection);
     if (typeof products    === 'string') products    = JSON.parse(products);
 
-    // Subir imágenes base64 a Cloudinary (fuera del withDB — no usa DB)
+    // Subir imágenes base64 a Cloudinary (fuera del withDB)
     for (let i = 0; i < products.length; i++) {
       if (products[i].image && products[i].image.startsWith('data:image')) {
         const result = await cloudinary.uploader.upload(products[i].image, {
@@ -78,7 +84,10 @@ exports.updateGeneralProductPage = async (req, res) => {
 
 exports.deleteGeneralProductPage = async (req, res) => {
   try {
-    const categoryKey = decodeURIComponent(req.params.categoryKey);
+    const categoryKey = req.query.categoryKey;
+    if (!categoryKey) {
+      return res.status(400).json({ message: 'El parámetro "categoryKey" es requerido' });
+    }
 
     await withDB(async () => {
       const page = await GeneralProductPage.findOne({ where: { categoryKey } });
