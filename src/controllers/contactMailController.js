@@ -3,7 +3,7 @@ const nodemailer = require('nodemailer');
 const MailConfig = require('../models/mail_config');
 
 const ensureTable = async () => {
-  await MailConfig.sync({ alter: true });
+  await MailConfig.sync({ alter: false });
 };
 
 exports.sendContactEmail = async (req, res) => {
