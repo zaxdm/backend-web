@@ -17,11 +17,16 @@ if (!global._sequelize) {
         max: 2,
         min: 0,
         acquire: 30000,
-        idle: 5000,   // ✅ libera antes (era 10000)
-        evict: 1000   // ✅ revisa cada segundo (era 10000)
+        idle: 5000,
+        evict: 1000
       },
       dialectOptions: { connectTimeout: 20000 },
-      logging: false
+      logging: false,
+      // ✅ AÑADIDO: Desactivar conversión automática de camelCase a snake_case
+      define: {
+        underscored: false,      // 🔴 CRÍTICO: NO convertir mailUser → mail_user
+        freezeTableName: true    // Mantener nombres de tablas exactos
+      }
     }
   );
 }
