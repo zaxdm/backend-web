@@ -19,7 +19,7 @@ if (!global._sequelize) {
 
       // ✅ Pool de conexiones CRÍTICO para Vercel (max_user_connections = 5)
       pool: {
-        max: 2,           // ✅ Máximo 2 conexiones simultáneas (Vercel = 5, dejamos margen)
+        max: 2,           // ✅ Máximo 2 conexiones simultáneas
         min: 0,           // No mantener conexiones inactivas
         acquire: 30000,   // 30 segundos para obtener conexión
         idle: 5000,       // Liberar conexión después de 5 segundos inactiva
@@ -43,10 +43,11 @@ if (!global._sequelize) {
       // ✅ Logging (disable en producción)
       logging: process.env.NODE_ENV === 'production' ? false : console.log,
 
-      // ✅ Opciones adicionales
+      // ✅ Opciones de modelo (IMPORTANTE: freezeTableName para NO convertir nombres)
       define: {
         timestamps: true,
-        underscored: true,
+        underscored: false,  // ❌ CAMBIO CRÍTICO: false para NO convertir a snake_case
+        freezeTableName: true,  // ✅ Mantener nombres exactos de tablas
         charset: 'utf8mb4'
       }
     }
