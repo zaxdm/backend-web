@@ -5,8 +5,12 @@ const bodyParser = require('body-parser');
 const routes = require('./routes');
 const swaggerUI = require('swagger-ui-express');
 const swaggerDocument = require('../swagger.json');
- 
 
+// ✅ Sincronizar tabla mail_config
+const MailConfig = require('./models/mail_config');
+MailConfig.sync({ alter: true })
+  .then(() => console.log('✅ Tabla mail_config lista'))
+  .catch(err => console.error('❌ Error en mail_config sync:', err.message));
 
 app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -15,10 +19,9 @@ app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 app.use('/api', routes);
 app.use('/docs', swaggerUI.serve, swaggerUI.setup(swaggerDocument));
 
-// Solo escucha en local, NO en Vercel
 if (process.env.NODE_ENV !== 'production') {
   const port = process.env.PORT || 3000;
   app.listen(port, () => console.log(`Servidor corriendo en puerto ${port}`));
 }
 
-module.exports = app; // Vercel necesita esto
+module.exports = app;
