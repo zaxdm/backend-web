@@ -1,49 +1,49 @@
 'use strict';
-const MailConfig = require('../models/mail_config');
-const { withDB } = require('../config/sequelize');
 const nodemailer = require('nodemailer');
+const MailConfig = require('../models/mail_config');
+
+// Garantiza que la tabla existe antes de operar
+const ensureTable = async () => {
+  await MailConfig.sync({ alter: true });
+};
 
 exports.getMailConfig = async (req, res) => {
   try {
-    const config = await withDB(async () => {
-      const found = await MailConfig.findOne();
-      return found;
-    });
-    if (!config) return res.json({ mailUser: '', mailPass: '' });
-    res.json({ mailUser: config.mailUser, mailPass: '••••••••' }); // nunca devuelves la pass real
+    await ensureTable();
+    const config = await MailConfig.findOne();
+    if (!config) return res.json({ mailUser: '' });
+    res.json({ mailUser: config.mailUser });
   } catch (error) {
     console.error('Error al obtener MailConfig:', error.message);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    res.status(500).json({ message: error.message });
   }
 };
 
 exports.saveMailConfig = async (req, res) => {
   try {
+    await ensureTable();
     const { mailUser, mailPass } = req.body;
     if (!mailUser || !mailPass) {
       return res.status(400).json({ message: 'mailUser y mailPass son requeridos' });
     }
-
-    await withDB(async () => {
-      const existing = await MailConfig.findOne();
-      if (existing) {
-        await existing.update({ mailUser, mailPass });
-      } else {
-        await MailConfig.create({ mailUser, mailPass });
-      }
-    });
-
+    const existing = await MailConfig.findOne();
+    if (existing) {
+      await existing.update({ mailUser, mailPass });
+    } else {
+      await MailConfig.create({ mailUser, mailPass });
+    }
     res.json({ success: true, message: 'Configuración guardada correctamente' });
   } catch (error) {
     console.error('Error al guardar MailConfig:', error.message);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    res.status(500).json({ message: error.message });
   }
 };
 
 exports.testMailConfig = async (req, res) => {
   try {
+    await ensureTable();
     const config = await MailConfig.findOne();
-    if (!config) return res.status(404).json({ message: 'No hay configuración guardada' });
+    if (!config) return res.status(404).json({ message: 'No hay configuración guardada. Guarda primero las credenciales.' });
 
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
@@ -62,6 +62,6 @@ exports.testMailConfig = async (req, res) => {
     res.json({ success: true, message: 'Correo de prueba enviado correctamente' });
   } catch (error) {
     console.error('Error en test de correo:', error.message);
-    res.status(500).json({ message: 'Error al enviar correo de prueba: ' + error.message });
+    res.status(500).json({ message: 'Error: ' + error.message });
   }
 };

@@ -2,6 +2,10 @@
 const nodemailer = require('nodemailer');
 const MailConfig = require('../models/mail_config');
 
+const ensureTable = async () => {
+  await MailConfig.sync({ alter: true });
+};
+
 exports.sendContactEmail = async (req, res) => {
   const { firstName, lastName, email, phone, company, message, toEmail, region, contactName } = req.body;
 
@@ -10,7 +14,8 @@ exports.sendContactEmail = async (req, res) => {
   }
 
   try {
-    // Lee credenciales de la BD
+    await ensureTable(); // 👈 garantiza que la tabla existe
+
     const config = await MailConfig.findOne();
     if (!config) {
       return res.status(500).json({ error: 'No hay configuración de correo. Configúrala en el panel admin.' });
