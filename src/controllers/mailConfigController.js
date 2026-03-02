@@ -2,110 +2,206 @@
 const nodemailer = require('nodemailer');
 const MailConfig = require('../models/mail_config');
 
-// ✅ Sincronización único — solo se ejecuta UNA VEZ cuando se importa el módulo
-let syncPromise = null;
+// ✅ Singleton pattern para sincronización
+let tableInitialized = false;
+let initPromise = null;
 
-const ensureTable = async () => {
-  // Si ya está sincronizando, espera a que termine
-  if (syncPromise) return syncPromise;
+const initializeTable = async () => {
+  // Si ya está inicializado, retorna inmediatamente
+  if (tableInitialized) return;
   
-  // Si la tabla ya existe, no hacer nada
-  if (MailConfig.tableName) return;
-  
-  // Sincronizar tabla — solo la primera vez
-  syncPromise = MailConfig.sync({ alter: false }).catch(err => {
-    console.error('Error al sincronizar tabla:', err);
-    syncPromise = null; // Reset para reintentar si falla
-    throw err;
-  });
-  
-  return syncPromise;
+  // Si está en proceso, espera a que termine
+  if (initPromise) return initPromise;
+
+  initPromise = (async () => {
+    try {
+      // Sincronizar solo sin alterar tabla existente
+      await MailConfig.sync({ alter: false });
+      tableInitialized = true;
+      console.log('✅ MailConfig tabla sincronizada');
+    } catch (error) {
+      console.error('❌ Error sincronizando MailConfig:', error.message);
+      tableInitialized = false;
+      initPromise = null;
+      throw error;
+    }
+  })();
+
+  return initPromise;
 };
 
-// ✅ Ejecutar sincronización una sola vez al cargar el módulo
-ensureTable().catch(err => console.error('Sincronización inicial fallida:', err));
+// ✅ Inicializar tabla cuando el módulo se carga (no esperar)
+initializeTable().catch(err => {
+  console.warn('⚠️  Tabla no inicializada al startup, se inicializará en primer request');
+});
 
 exports.getMailConfig = async (req, res) => {
   try {
+    await initializeTable();
+
     const config = await MailConfig.findOne();
-    if (!config) return res.json({ mailUser: '' });
-    res.json({ mailUser: config.mailUser });
+
+    if (!config) {
+      return res.json({ mailUser: '', success: true });
+    }
+
+    res.json({
+      success: true,
+      mailUser: config.mailUser
+    });
   } catch (error) {
-    console.error('Error al obtener MailConfig:', error.message);
-    res.status(500).json({ message: error.message });
+    console.error('❌ getMailConfig error:', error.message);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
 exports.saveMailConfig = async (req, res) => {
   try {
+    await initializeTable();
+
     const { mailUser, mailPass } = req.body;
+
     if (!mailUser || !mailPass) {
-      return res.status(400).json({ message: 'mailUser y mailPass son requeridos' });
+      return res.status(400).json({
+        success: false,
+        message: 'mailUser y mailPass son requeridos'
+      });
     }
-    const existing = await MailConfig.findOne();
-    if (existing) {
-      await existing.update({ mailUser, mailPass });
+
+    let config = await MailConfig.findOne();
+
+    if (config) {
+      await config.update({ mailUser, mailPass });
     } else {
-      await MailConfig.create({ mailUser, mailPass });
+      config = await MailConfig.create({ mailUser, mailPass });
     }
-    res.json({ success: true, message: 'Configuración guardada correctamente' });
+
+    console.log('✅ Configuración de correo guardada');
+    res.json({
+      success: true,
+      message: 'Configuración guardada correctamente'
+    });
   } catch (error) {
-    console.error('Error al guardar MailConfig:', error.message);
-    res.status(500).json({ message: error.message });
+    console.error('❌ saveMailConfig error:', error.message);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
 exports.testMailConfig = async (req, res) => {
   try {
+    await initializeTable();
+
     const config = await MailConfig.findOne();
-    if (!config) return res.status(404).json({ message: 'No hay configuración guardada. Guarda primero las credenciales.' });
+
+    if (!config || !config.mailUser || !config.mailPass) {
+      return res.status(404).json({
+        success: false,
+        message: 'No hay configuración guardada. Guarda primero las credenciales.'
+      });
+    }
 
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 587,
       secure: false,
-      auth: { user: config.mailUser, pass: config.mailPass }
+      auth: {
+        user: config.mailUser,
+        pass: config.mailPass
+      },
+      connectionTimeout: 5000,
+      socketTimeout: 5000
     });
 
+    // Verificar conexión
+    await transporter.verify();
+
+    // Enviar correo de prueba
     await transporter.sendMail({
-      from: `"Test Terelion" <${config.mailUser}>`,
+      from: `"Terelion Test" <${config.mailUser}>`,
       to: config.mailUser,
       subject: 'Test de configuración de correo ✅',
-      html: '<p>Si ves este correo, la configuración es correcta.</p>'
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #27ae60;">✅ Configuración Correcta</h2>
+          <p>Si ves este correo, la configuración de Gmail es correcta.</p>
+          <p style="color: #999; font-size: 12px; margin-top: 30px;">
+            Enviado automáticamente desde el panel de administración.
+          </p>
+        </div>
+      `
     });
 
-    res.json({ success: true, message: 'Correo de prueba enviado correctamente' });
+    console.log('✅ Correo de prueba enviado a:', config.mailUser);
+
+    res.json({
+      success: true,
+      message: 'Correo de prueba enviado correctamente'
+    });
   } catch (error) {
-    console.error('Error en test de correo:', error.message);
-    res.status(500).json({ message: 'Error: ' + error.message });
+    console.error('❌ testMailConfig error:', error.message);
+
+    let userMessage = error.message;
+    if (error.message.includes('Invalid login')) {
+      userMessage = 'Credenciales incorrectas. Verifica el usuario y contraseña de Gmail.';
+    } else if (error.message.includes('ENOTFOUND') || error.message.includes('getaddrinfo')) {
+      userMessage = 'No se puede conectar a Gmail. Verifica tu conexión a Internet.';
+    } else if (error.message.includes('connect ECONNREFUSED')) {
+      userMessage = 'Conexión rechazada por el servidor SMTP de Gmail.';
+    }
+
+    res.status(500).json({
+      success: false,
+      message: userMessage
+    });
   }
 };
 
 exports.sendContactEmail = async (req, res) => {
   const { firstName, lastName, email, phone, company, message, toEmail, region, contactName } = req.body;
 
+  // Validación
   if (!toEmail || !email || !message || !firstName || !lastName) {
-    return res.status(400).json({ error: 'Faltan campos requeridos' });
+    return res.status(400).json({
+      success: false,
+      error: 'Faltan campos requeridos'
+    });
   }
 
   try {
+    await initializeTable();
+
     const config = await MailConfig.findOne();
-    if (!config) {
-      return res.status(500).json({ error: 'No hay configuración de correo. Configúrala en el panel admin.' });
+
+    if (!config || !config.mailUser || !config.mailPass) {
+      return res.status(500).json({
+        success: false,
+        error: 'No hay configuración de correo. Configúrala en el panel admin.'
+      });
     }
 
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 587,
       secure: false,
-      auth: { user: config.mailUser, pass: config.mailPass }
+      auth: {
+        user: config.mailUser,
+        pass: config.mailPass
+      },
+      connectionTimeout: 5000,
+      socketTimeout: 5000
     });
 
     await transporter.sendMail({
       from: `"Web Terelion" <${config.mailUser}>`,
       to: toEmail,
       replyTo: email,
-      subject: `Nuevo contacto desde web — ${region}`,
+      subject: `Nuevo contacto desde web — ${region || 'Sin especificar'}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #1a1a2e; border-bottom: 2px solid #e74c3c; padding-bottom: 10px;">
@@ -114,11 +210,11 @@ exports.sendContactEmail = async (req, res) => {
           <table style="width:100%; border-collapse: collapse;">
             <tr style="background:#f8f8f8;">
               <td style="padding:8px; font-weight:bold; width:140px;">Región</td>
-              <td style="padding:8px;">${region}</td>
+              <td style="padding:8px;">${region || '—'}</td>
             </tr>
             <tr>
               <td style="padding:8px; font-weight:bold;">Contacto asignado</td>
-              <td style="padding:8px;">${contactName}</td>
+              <td style="padding:8px;">${contactName || '—'}</td>
             </tr>
             <tr style="background:#f8f8f8;">
               <td style="padding:8px; font-weight:bold;">Nombre</td>
@@ -148,10 +244,17 @@ exports.sendContactEmail = async (req, res) => {
       `
     });
 
-    res.json({ success: true, message: 'Correo enviado correctamente' });
+    console.log('✅ Correo de contacto enviado a:', toEmail);
 
-  } catch (err) {
-    console.error('Error enviando correo:', err);
-    res.status(500).json({ error: 'Error al enviar el correo' });
+    res.json({
+      success: true,
+      message: 'Correo enviado correctamente'
+    });
+  } catch (error) {
+    console.error('❌ sendContactEmail error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: 'Error al enviar el correo: ' + error.message
+    });
   }
 };
