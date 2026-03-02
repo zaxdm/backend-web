@@ -2,9 +2,13 @@
 const nodemailer = require('nodemailer');
 const MailConfig = require('../models/mail_config');
 
-// Garantiza que la tabla existe antes de operar
+// ✅ Solo sincroniza UNA vez por instancia caliente de Vercel
+let tableReady = false;
+
 const ensureTable = async () => {
-  await MailConfig.sync({ alter: true });
+  if (tableReady) return;
+  await MailConfig.sync({ force: false }); // ✅ force: false = solo crea si no existe, sin alter
+  tableReady = true;
 };
 
 exports.getMailConfig = async (req, res) => {
