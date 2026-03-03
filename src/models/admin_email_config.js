@@ -6,6 +6,7 @@ const sequelize = require('../config/sequelize');
 const AdminEmailConfig = sequelize.define(
   'AdminEmailConfig',
   {
+    //cambios
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
