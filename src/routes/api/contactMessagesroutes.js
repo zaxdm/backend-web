@@ -3,7 +3,7 @@
 
 const express = require('express');
 const router = express.Router();
-const controller = require('../../controllers/contact-messages.controller');
+const controller = require('../../controllers/contact-messagescontroller');
 const verificarToken = require('../../middleware/auth');
 
 // GET todos los mensajes (admin - requiere token)

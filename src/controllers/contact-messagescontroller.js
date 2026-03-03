@@ -1,7 +1,7 @@
 // controllers/contact-messages.controller.js
 'use strict';
 
-const ContactMessage = require('../models/contact_message');
+const ContactMessage = require('../models/contact_messages');
 const { withDB } = require('../config/sequelize');
 
 // GET todos los mensajes (admin)
