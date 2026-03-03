@@ -29,7 +29,7 @@ router.use('/mas-info',              masInfoRoutes);
 router.use('/navbar',                navbarRoutes);
 router.use('/noticias',              noticiasRoutes);
 router.use('/products',              productsRoutes);
-router.use('/contactmessages',       contactMessagesRoutes);
+router.use('/contact-messages',      contactMessagesRoutes);
 router.post('/login',                authController.autenticarUsuario);
 
 module.exports = router;
