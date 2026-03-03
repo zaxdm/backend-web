@@ -13,8 +13,8 @@ const masInfoRoutes           = require('./api/masInforoutes');
 const navbarRoutes            = require('./api/navbarroutes');
 const noticiasRoutes          = require('./api/noticiasroutes');
 const productsRoutes          = require('./api/productsroutes');
-// const contactMailRoutes       = require('./api/contactMailroutes'); 
-// const smtpConfigRoutes        = require('./api/smtpConfigRoutes');  
+const contactMailRoutes       = require('../api/contactMailRoutes'); 
+const smtpConfigRoutes        = require('./api/smtpConfigRoutes');  
 const authController          = require('../controllers/authController');
 
 router.use('/usuarios',              usuariosRoutes);
@@ -29,8 +29,8 @@ router.use('/mas-info',              masInfoRoutes);
 router.use('/navbar',                navbarRoutes);
 router.use('/noticias',              noticiasRoutes);
 router.use('/products',              productsRoutes);
-// router.use('/contact-mail',          contactMailRoutes);
-// router.use('/smtp-config',           smtpConfigRoutes);
+router.use('/contact-mail',          contactMailRoutes);
+router.use('/smtp-config',           smtpConfigRoutes);
 router.post('/login',                authController.autenticarUsuario);
 
 module.exports = router;
