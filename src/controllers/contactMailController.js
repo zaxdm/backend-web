@@ -5,18 +5,19 @@ const ContactSubmission = require('../models/contact_submission');
 const SmtpConfig = require('../models/smtp_config');
 const { withDB } = require('../config/sequelize');
 
-// Crea un transporter dinámico leyendo la config desde la BD
-async function createTransporter() {
-  const config = await SmtpConfig.findOne();
-  if (!config || !config.user || !config.pass) {
-    throw new Error('El SMTP no está configurado. Configúralo desde el panel de administración.');
-  }
-  return nodemailer.createTransport({
-    host:   config.host,
-    port:   config.port,
-    secure: config.secure,
-    auth:   { user: config.user, pass: config.pass }
-  });
+function detectSmtpProvider(email) {
+  const domain = email.split('@')[1].toLowerCase();
+
+  const providers = {
+    'gmail.com':     { host: 'smtp.gmail.com',     port: 587, secure: false },
+    'outlook.com':   { host: 'smtp.office365.com',  port: 587, secure: false },
+    'hotmail.com':   { host: 'smtp.office365.com',  port: 587, secure: false },
+    'live.com':      { host: 'smtp.office365.com',  port: 587, secure: false },
+    'yahoo.com':     { host: 'smtp.mail.yahoo.com', port: 587, secure: false },
+    'icloud.com':    { host: 'smtp.mail.me.com',    port: 587, secure: false },
+  };
+
+  return providers[domain] ?? { host: `smtp.${domain}`, port: 587, secure: false };
 }
 
 exports.sendContactMail = async (req, res) => {
@@ -37,12 +38,23 @@ exports.sendContactMail = async (req, res) => {
       });
     });
 
-    // 2. Leer SMTP desde BD y enviar correo
+    // 2. Leer SMTP desde BD
     const smtpConfig = await SmtpConfig.findOne();
-    const transporter = await createTransporter();
+    if (!smtpConfig || !smtpConfig.user || !smtpConfig.pass) {
+      return res.status(500).json({ message: 'El correo no está configurado. Contacta al administrador.' });
+    }
 
+    // 3. Detectar proveedor automáticamente
+    const { host, port, secure } = detectSmtpProvider(smtpConfig.user);
+
+    const transporter = nodemailer.createTransport({
+      host, port, secure,
+      auth: { user: smtpConfig.user, pass: smtpConfig.pass }
+    });
+
+    // 4. Enviar correo al contacto regional
     await transporter.sendMail({
-      from:    `"${smtpConfig.fromName}" <${smtpConfig.user}>`,
+      from:    `"Formulario Web Terelion" <${smtpConfig.user}>`,
       to:      toEmail,
       replyTo: email,
       subject: `[Contacto ${region}] ${firstName} ${lastName}`,
