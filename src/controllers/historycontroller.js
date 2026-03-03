@@ -1,6 +1,8 @@
+// controllers/historycontroller.js
 'use strict';
 
 const History = require('../models/history');
+const cloudinary = require('../config/cloudinary');
 const { withDB } = require('../config/sequelize');
 
 exports.getHistory = async (req, res) => {
@@ -76,5 +78,36 @@ exports.deleteHistory = async (req, res) => {
     const status = error.status ?? 500;
     console.error('Error al eliminar History:', error.message);
     res.status(status).json({ message: error.message });
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUBIR IMAGEN BASE64 A CLOUDINARY
+// ═══════════════════════════════════════════════════════════════════════════
+
+exports.uploadImage = async (req, res) => {
+  try {
+    const { imageData, publicId, folder } = req.body;
+
+    if (!imageData) {
+      return res.status(400).json({ message: 'imageData es requerido' });
+    }
+
+    // Subir a Cloudinary
+    const result = await cloudinary.uploader.upload(imageData, {
+      folder: folder || 'imagenes/history',
+      public_id: publicId || `history_${Date.now()}`,
+      overwrite: true,
+      resource_type: 'auto'
+    });
+
+    res.json({
+      secure_url: result.secure_url,
+      public_id: result.public_id,
+      format: result.format
+    });
+  } catch (error) {
+    console.error('Error al subir imagen a Cloudinary:', error.message);
+    res.status(500).json({ message: `Error al subir imagen: ${error.message}` });
   }
 };
