@@ -1,6 +1,8 @@
+// masInfocontroller.js
 'use strict';
 
 const MasInfo = require('../models/mas_info');
+const cloudinary = require('../config/cloudinary');
 const { withDB } = require('../config/sequelize');
 
 exports.getMasInfo = async (req, res) => {
@@ -21,18 +23,23 @@ exports.getMasInfo = async (req, res) => {
               parrafos: [
                 'Esta línea de trabajo no es para todos. En Terelion, conocemos las condiciones exigentes y los desafíos cotidianos que enfrentan sus operaciones.',
                 'Trabajamos con todos nuestros clientes para garantizar que las brocas que utilizan sean las más duraderas y resistentes, eficientes y rentables del mercado.'
-              ]
+              ],
+              imagen: '',
+              reverse: false
             }
           ],
           sections: [
             {
               titulo: 'Confíe en Terelion. Tenemos lo que se necesita.',
               parrafos: ['Lograr ese avance al final de un largo día de trabajo.', 'Confíe en Terelion para operaciones más productivas.'],
-              imagen: 'https://www.terelion.com/wp-content/uploads/2021/07/image-1-1024x768.jpg'
+              imagen: 'https://www.terelion.com/wp-content/uploads/2021/07/image-1-1024x768.jpg',
+              reverse: false
             }
           ],
           bottomBanner: {
+            titulo: 'Bajo el mismo cielo, hacia la misma meta',
             texto: '¿Listo para llevar su operación al siguiente nivel?',
+            imagen: '',
             boton: { label: 'Contáctanos', url: '/contactos' }
           }
         });
@@ -68,7 +75,12 @@ exports.updateMasInfo = async (req, res) => {
     const masInfo = await withDB(async () => {
       const found = await MasInfo.findOne();
       if (!found) throw Object.assign(new Error('No existe contenido para actualizar'), { status: 404 });
-      await found.update({ hero: req.body.hero, contentSections: req.body.contentSections, sections: req.body.sections, bottomBanner: req.body.bottomBanner });
+      await found.update({ 
+        hero: req.body.hero, 
+        contentSections: req.body.contentSections, 
+        sections: req.body.sections, 
+        bottomBanner: req.body.bottomBanner 
+      });
       return found;
     });
     res.json(masInfo);
@@ -91,5 +103,36 @@ exports.deleteMasInfo = async (req, res) => {
     const status = error.status ?? 500;
     console.error('Error al eliminar MasInfo:', error.message);
     res.status(status).json({ message: error.message });
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUBIR IMAGEN A CLOUDINARY
+// ═══════════════════════════════════════════════════════════════════════════
+
+exports.uploadImage = async (req, res) => {
+  try {
+    const { imageData, publicId, folder } = req.body;
+
+    if (!imageData) {
+      return res.status(400).json({ message: 'imageData es requerido' });
+    }
+
+    // Subir a Cloudinary
+    const result = await cloudinary.uploader.upload(imageData, {
+      folder: folder || 'imagenes/mas-info',
+      public_id: publicId || `mas-info-${Date.now()}`,
+      overwrite: true,
+      resource_type: 'auto'
+    });
+
+    res.json({
+      secure_url: result.secure_url,
+      public_id: result.public_id,
+      format: result.format
+    });
+  } catch (error) {
+    console.error('Error al subir imagen:', error.message);
+    res.status(500).json({ message: `Error al subir imagen: ${error.message}` });
   }
 };
