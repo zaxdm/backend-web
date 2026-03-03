@@ -14,7 +14,7 @@ const navbarRoutes            = require('./api/navbarroutes');
 const noticiasRoutes          = require('./api/noticiasroutes');
 const productsRoutes          = require('./api/productsroutes');
 const contactMailRoutes       = require('../api/contactMailroutes'); 
-const smtpConfigRoutes        = require('./api/smtpConfigRoutes');  
+const smtpConfigRoutes        = require('../api/smtpConfigroutes');  
 const authController          = require('../controllers/authController');
 
 router.use('/usuarios',              usuariosRoutes);
