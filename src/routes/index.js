@@ -14,7 +14,6 @@ const navbarRoutes = require('./api/navbarroutes');
 const noticiasRoutes = require('./api/noticiasroutes');
 const productsRoutes = require('./api/productsroutes');
 const authController = require('../controllers/authController');
-const mailConfigRoutes = require('./api/mailConfigRoutes');
 
 router.use('/usuarios', usuariosRoutes);
 router.use('/auth', authRoutes);
@@ -29,6 +28,5 @@ router.use('/navbar', navbarRoutes);
 router.use('/noticias', noticiasRoutes);
 router.use('/products', productsRoutes);
 router.post('/login', authController.autenticarUsuario);
-router.use('/admin-email-config', mailConfigRoutes);
 
 module.exports = router;
