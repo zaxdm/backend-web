@@ -29,6 +29,6 @@ router.use('/navbar', navbarRoutes);
 router.use('/noticias', noticiasRoutes);
 router.use('/products', productsRoutes);
 router.post('/login', authController.autenticarUsuario);
-router.use('/mail-config', mailConfigRoutes);
+router.use('/admin-email-config', mailConfigRoutes);
 
 module.exports = router;
