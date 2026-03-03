@@ -13,6 +13,8 @@ const masInfoRoutes           = require('./api/masInforoutes');
 const navbarRoutes            = require('./api/navbarroutes');
 const noticiasRoutes          = require('./api/noticiasroutes');
 const productsRoutes          = require('./api/productsroutes');
+const contactMessagesRoutes = require('./api/contactmes-sagesroutes');
+
 const authController          = require('../controllers/authController');
 
 router.use('/usuarios',              usuariosRoutes);
@@ -27,6 +29,7 @@ router.use('/mas-info',              masInfoRoutes);
 router.use('/navbar',                navbarRoutes);
 router.use('/noticias',              noticiasRoutes);
 router.use('/products',              productsRoutes);
+router.use('/contactmes-sages',      contactMessagesRoutes);
 router.post('/login',                authController.autenticarUsuario);
 
 module.exports = router;
