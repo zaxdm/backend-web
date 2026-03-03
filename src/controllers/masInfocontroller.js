@@ -1,4 +1,4 @@
-// masInfocontroller.js
+// controllers/masInfocontroller.js
 'use strict';
 
 const MasInfo = require('../models/mas_info');
@@ -107,7 +107,7 @@ exports.deleteMasInfo = async (req, res) => {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// SUBIR IMAGEN A CLOUDINARY
+// SUBIR IMAGEN BASE64 A CLOUDINARY (fuera del withDB)
 // ═══════════════════════════════════════════════════════════════════════════
 
 exports.uploadImage = async (req, res) => {
@@ -121,7 +121,7 @@ exports.uploadImage = async (req, res) => {
     // Subir a Cloudinary
     const result = await cloudinary.uploader.upload(imageData, {
       folder: folder || 'imagenes/mas-info',
-      public_id: publicId || `mas-info-${Date.now()}`,
+      public_id: publicId || `masinfo_${Date.now()}`,
       overwrite: true,
       resource_type: 'auto'
     });
@@ -132,7 +132,7 @@ exports.uploadImage = async (req, res) => {
       format: result.format
     });
   } catch (error) {
-    console.error('Error al subir imagen:', error.message);
+    console.error('Error al subir imagen a Cloudinary:', error.message);
     res.status(500).json({ message: `Error al subir imagen: ${error.message}` });
   }
 };
