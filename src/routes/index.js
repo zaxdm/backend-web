@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const https = require('https');
 
 const usuariosRoutes          = require('./api/UsuarioRoutes');
 const authRoutes              = require('./api/authRoutes');
@@ -14,7 +13,7 @@ const masInfoRoutes           = require('./api/masInforoutes');
 const navbarRoutes            = require('./api/navbarroutes');
 const noticiasRoutes          = require('./api/noticiasroutes');
 const productsRoutes          = require('./api/productsroutes');
-const contactMessagesRoutes   = require('./api/contactMessagesroutes');
+const contactMessagesRoutes = require('./api/contactMessagesroutes');
 
 const authController          = require('../controllers/authController');
 
@@ -32,26 +31,5 @@ router.use('/noticias',              noticiasRoutes);
 router.use('/products',              productsRoutes);
 router.use('/contact-messages',      contactMessagesRoutes);
 router.post('/login',                authController.autenticarUsuario);
-
-// ─── Proxy descarga de PDFs desde Cloudinary ─────────────────────────────────
-router.get('/download-pdf', (req, res) => {
-  const url = req.query.url;
-
-  if (!url || !url.startsWith('https://res.cloudinary.com')) {
-    return res.status(400).json({ message: 'URL inválida' });
-  }
-
-  const filename = req.query.filename || 'documento.pdf';
-
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-
-  https.get(url, (stream) => {
-    stream.pipe(res);
-  }).on('error', (err) => {
-    console.error('Error al descargar PDF:', err);
-    res.status(500).json({ message: 'Error al descargar el archivo' });
-  });
-});
 
 module.exports = router;
