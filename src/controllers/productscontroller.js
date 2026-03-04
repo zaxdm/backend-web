@@ -8,9 +8,7 @@ const uploadBase64 = (base64, options) => new Promise((resolve, reject) => {
   cloudinary.uploader.upload(base64, options, (err, result) => {
     if (err) reject(err); else resolve(result.secure_url);
   });
-}); 
-    
-
+});
 
 function parseMaybeJSON(value, fallback) {
   if (value == null) return fallback;
@@ -22,14 +20,39 @@ function parseMaybeJSON(value, fallback) {
 
 function sanitizeFilename(filename) {
   if (!filename) return `doc_${Date.now()}`;
-  return filename
+
+  const ext = filename.match(/\.[^/.]+$/)?.[0] ?? '';
+  const name = filename
     .replace(/\.[^/.]+$/, '')
     .replace(/[^a-zA-Z0-9_-]/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
     .toLowerCase()
     || `doc_${Date.now()}`;
+
+  return name + ext;
 }
+
+// ─── Helper para subir PDFs a Cloudinary ─────────────────────────────────────
+
+async function uploadPDFs(downloadsBase64, downloadsFileNames, downloads) {
+  for (let i = 0; i < downloadsBase64.length; i++) {
+    if (downloadsBase64[i]) {
+      const cleanName = sanitizeFilename(downloadsFileNames[i]) || `doc_${Date.now()}_${i}`;
+      const url = await uploadBase64(downloadsBase64[i], {
+        folder: 'pdf',
+        resource_type: 'raw',
+        public_id: cleanName,
+        use_filename: false,
+        unique_filename: false
+      });
+      if (!downloads[i]) downloads[i] = { title: '', description: '', link: '' };
+      downloads[i].link = url;
+    }
+  }
+}
+
+// ─── Controllers ─────────────────────────────────────────────────────────────
 
 exports.getProducts = async (req, res) => {
   try {
@@ -80,34 +103,42 @@ exports.createProduct = async (req, res) => {
 
     if (!ruta) return res.status(400).json({ message: 'El campo "ruta" es requerido' });
 
-    descriptions     = parseMaybeJSON(descriptions, []);
-    thumbnails       = parseMaybeJSON(thumbnails, []);
-    breadcrumbs      = parseMaybeJSON(breadcrumbs, []);
-    features         = parseMaybeJSON(features, []);
-    downloads        = parseMaybeJSON(downloads, []);
-    thumbnailsBase64 = parseMaybeJSON(thumbnailsBase64, []);
-    downloadsBase64  = parseMaybeJSON(downloadsBase64, []);
+    descriptions       = parseMaybeJSON(descriptions, []);
+    thumbnails         = parseMaybeJSON(thumbnails, []);
+    breadcrumbs        = parseMaybeJSON(breadcrumbs, []);
+    features           = parseMaybeJSON(features, []);
+    downloads          = parseMaybeJSON(downloads, []);
+    thumbnailsBase64   = parseMaybeJSON(thumbnailsBase64, []);
+    downloadsBase64    = parseMaybeJSON(downloadsBase64, []);
     downloadsFileNames = parseMaybeJSON(downloadsFileNames, []);
 
     // Cloudinary (fuera del withDB)
     if (mainImageBase64) {
-      mainImage = await uploadBase64(mainImageBase64, { folder: 'imagenes/products', public_id: `main_${Date.now()}` });
+      mainImage = await uploadBase64(mainImageBase64, {
+        folder: 'imagenes/products',
+        public_id: `main_${Date.now()}`
+      });
     }
+
     for (let i = 0; i < thumbnailsBase64.length; i++) {
-      if (thumbnailsBase64[i]) thumbnails[i] = await uploadBase64(thumbnailsBase64[i], { folder: 'imagenes/products', public_id: `thumb_${Date.now()}_${i}` });
-    }
-    for (let i = 0; i < downloadsBase64.length; i++) {
-      if (downloadsBase64[i]) {
-        const url = await uploadBase64(downloadsBase64[i], { folder: 'pdf', resource_type: 'raw', public_id: sanitizeFilename(downloadsFileNames[i]) || `doc_${Date.now()}_${i}`, use_filename: true, unique_filename: false });
-        if (!downloads[i]) downloads[i] = { title: '', description: '', link: '' };
-        downloads[i].link = url;
+      if (thumbnailsBase64[i]) {
+        thumbnails[i] = await uploadBase64(thumbnailsBase64[i], {
+          folder: 'imagenes/products',
+          public_id: `thumb_${Date.now()}_${i}`
+        });
       }
     }
+
+    await uploadPDFs(downloadsBase64, downloadsFileNames, downloads);
 
     const product = await withDB(async () => {
       const existing = await Products.findOne({ where: { ruta } });
       if (existing) throw Object.assign(new Error('Ya existe un producto con esa ruta.'), { status: 400 });
-      return await Products.create({ ruta, title, subtitle, descriptions, mainImage, thumbnails, contactLink, breadcrumbs, features, downloads });
+      return await Products.create({
+        ruta, title, subtitle, descriptions,
+        mainImage, thumbnails, contactLink,
+        breadcrumbs, features, downloads
+      });
     });
 
     res.status(201).json(product);
@@ -131,34 +162,41 @@ exports.updateProductByRuta = async (req, res) => {
       features, downloads, downloadsBase64, downloadsFileNames
     } = req.body;
 
-    // Valores actuales del producto (para merge)
     const current = await withDB(() => Products.findOne({ where: { ruta } }));
 
-    descriptions     = parseMaybeJSON(descriptions,    current?.descriptions    || []);
-    thumbnails       = parseMaybeJSON(thumbnails,      current?.thumbnails      || []);
-    breadcrumbs      = parseMaybeJSON(breadcrumbs,     current?.breadcrumbs     || []);
-    features         = parseMaybeJSON(features,        current?.features        || []);
-    downloads        = parseMaybeJSON(downloads,       current?.downloads       || []);
-    thumbnailsBase64 = parseMaybeJSON(thumbnailsBase64, []);
-    downloadsBase64  = parseMaybeJSON(downloadsBase64,  []);
+    descriptions       = parseMaybeJSON(descriptions,    current?.descriptions    || []);
+    thumbnails         = parseMaybeJSON(thumbnails,      current?.thumbnails      || []);
+    breadcrumbs        = parseMaybeJSON(breadcrumbs,     current?.breadcrumbs     || []);
+    features           = parseMaybeJSON(features,        current?.features        || []);
+    downloads          = parseMaybeJSON(downloads,       current?.downloads       || []);
+    thumbnailsBase64   = parseMaybeJSON(thumbnailsBase64, []);
+    downloadsBase64    = parseMaybeJSON(downloadsBase64,  []);
     downloadsFileNames = parseMaybeJSON(downloadsFileNames, []);
 
     // Cloudinary (fuera del withDB)
     if (mainImageBase64) {
-      mainImage = await uploadBase64(mainImageBase64, { folder: 'imagenes/products', public_id: `main_${Date.now()}` });
+      mainImage = await uploadBase64(mainImageBase64, {
+        folder: 'imagenes/products',
+        public_id: `main_${Date.now()}`
+      });
     }
+
     for (let i = 0; i < thumbnailsBase64.length; i++) {
-      if (thumbnailsBase64[i]) thumbnails[i] = await uploadBase64(thumbnailsBase64[i], { folder: 'imagenes/products', public_id: `thumb_${Date.now()}_${i}` });
-    }
-    for (let i = 0; i < downloadsBase64.length; i++) {
-      if (downloadsBase64[i]) {
-        const url = await uploadBase64(downloadsBase64[i], { folder: 'pdf', resource_type: 'raw', public_id: sanitizeFilename(downloadsFileNames[i]) || `doc_${Date.now()}_${i}`, use_filename: true, unique_filename: false });
-        if (!downloads[i]) downloads[i] = { title: '', description: '', link: '' };
-        downloads[i].link = url;
+      if (thumbnailsBase64[i]) {
+        thumbnails[i] = await uploadBase64(thumbnailsBase64[i], {
+          folder: 'imagenes/products',
+          public_id: `thumb_${Date.now()}_${i}`
+        });
       }
     }
 
-    const data = { ruta, title, subtitle, descriptions, mainImage, thumbnails, contactLink, breadcrumbs, features, downloads };
+    await uploadPDFs(downloadsBase64, downloadsFileNames, downloads);
+
+    const data = {
+      ruta, title, subtitle, descriptions,
+      mainImage, thumbnails, contactLink,
+      breadcrumbs, features, downloads
+    };
 
     const product = await withDB(async () => {
       if (current) { await current.update(data); return current; }
@@ -187,30 +225,39 @@ exports.updateProduct = async (req, res) => {
     const product = await withDB(() => Products.findByPk(id));
     if (!product) return res.status(404).json({ message: 'Producto no encontrado' });
 
-    descriptions     = parseMaybeJSON(descriptions,    product.descriptions    || []);
-    thumbnails       = parseMaybeJSON(thumbnails,      product.thumbnails      || []);
-    breadcrumbs      = parseMaybeJSON(breadcrumbs,     product.breadcrumbs     || []);
-    features         = parseMaybeJSON(features,        product.features        || []);
-    downloads        = parseMaybeJSON(downloads,       product.downloads       || []);
-    thumbnailsBase64 = parseMaybeJSON(thumbnailsBase64, []);
-    downloadsBase64  = parseMaybeJSON(downloadsBase64,  []);
+    descriptions       = parseMaybeJSON(descriptions,    product.descriptions    || []);
+    thumbnails         = parseMaybeJSON(thumbnails,      product.thumbnails      || []);
+    breadcrumbs        = parseMaybeJSON(breadcrumbs,     product.breadcrumbs     || []);
+    features           = parseMaybeJSON(features,        product.features        || []);
+    downloads          = parseMaybeJSON(downloads,       product.downloads       || []);
+    thumbnailsBase64   = parseMaybeJSON(thumbnailsBase64, []);
+    downloadsBase64    = parseMaybeJSON(downloadsBase64,  []);
     downloadsFileNames = parseMaybeJSON(downloadsFileNames, []);
 
     if (mainImageBase64) {
-      mainImage = await uploadBase64(mainImageBase64, { folder: 'imagenes/products', public_id: `main_${Date.now()}` });
+      mainImage = await uploadBase64(mainImageBase64, {
+        folder: 'imagenes/products',
+        public_id: `main_${Date.now()}`
+      });
     }
+
     for (let i = 0; i < thumbnailsBase64.length; i++) {
-      if (thumbnailsBase64[i]) thumbnails[i] = await uploadBase64(thumbnailsBase64[i], { folder: 'imagenes/products', public_id: `thumb_${Date.now()}_${i}` });
-    }
-    for (let i = 0; i < downloadsBase64.length; i++) {
-      if (downloadsBase64[i]) {
-        const url = await uploadBase64(downloadsBase64[i], { folder: 'pdf', resource_type: 'raw', public_id: sanitizeFilename(downloadsFileNames[i]) || `doc_${Date.now()}_${i}`, use_filename: true, unique_filename: false });
-        if (!downloads[i]) downloads[i] = { title: '', description: '', link: '' };
-        downloads[i].link = url;
+      if (thumbnailsBase64[i]) {
+        thumbnails[i] = await uploadBase64(thumbnailsBase64[i], {
+          folder: 'imagenes/products',
+          public_id: `thumb_${Date.now()}_${i}`
+        });
       }
     }
 
-    await withDB(() => product.update({ ruta, title, subtitle, descriptions, mainImage, thumbnails, contactLink, breadcrumbs, features, downloads }));
+    await uploadPDFs(downloadsBase64, downloadsFileNames, downloads);
+
+    await withDB(() => product.update({
+      ruta, title, subtitle, descriptions,
+      mainImage, thumbnails, contactLink,
+      breadcrumbs, features, downloads
+    }));
+
     res.json(product);
   } catch (error) {
     console.error('Error al actualizar producto:', error.message);
