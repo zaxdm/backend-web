@@ -9,8 +9,6 @@ const uploadBase64 = (base64, options) => new Promise((resolve, reject) => {
     if (err) reject(err); else resolve(result.secure_url);
   });
 }); 
-    
-
 
 function parseMaybeJSON(value, fallback) {
   if (value == null) return fallback;
@@ -21,14 +19,19 @@ function parseMaybeJSON(value, fallback) {
 }
 
 function sanitizeFilename(filename) {
-  if (!filename) return `doc_${Date.now()}`;
+  if (!filename) return `documento_${Date.now()}.pdf`;
+  
+  // Asegurar que termina en .pdf
+  if (!filename.toLowerCase().endsWith('.pdf')) {
+    filename = filename + '.pdf';
+  }
+  
+  // Limpiar caracteres especiales pero mantener extensión .pdf
   return filename
-    .replace(/\.[^/.]+$/, '')
-    .replace(/[^a-zA-Z0-9_-]/g, '-')
+    .replace(/[^a-zA-Z0-9_.-]/g, '-')  // Permite puntos para la extensión
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
-    .toLowerCase()
-    || `doc_${Date.now()}`;
+    .toLowerCase();
 }
 
 exports.getProducts = async (req, res) => {
@@ -93,12 +96,35 @@ exports.createProduct = async (req, res) => {
     if (mainImageBase64) {
       mainImage = await uploadBase64(mainImageBase64, { folder: 'imagenes/products', public_id: `main_${Date.now()}` });
     }
+    
     for (let i = 0; i < thumbnailsBase64.length; i++) {
       if (thumbnailsBase64[i]) thumbnails[i] = await uploadBase64(thumbnailsBase64[i], { folder: 'imagenes/products', public_id: `thumb_${Date.now()}_${i}` });
     }
+    
+    // ✅ BLOQUE CORREGIDO para PDFs en createProduct
     for (let i = 0; i < downloadsBase64.length; i++) {
       if (downloadsBase64[i]) {
-        const url = await uploadBase64(downloadsBase64[i], { folder: 'pdf', resource_type: 'raw', public_id: sanitizeFilename(downloadsFileNames[i]) || `doc_${Date.now()}_${i}`, use_filename: true, unique_filename: false });
+        let originalName = downloadsFileNames[i];
+        if (!originalName) {
+          originalName = `documento_${Date.now()}_${i}.pdf`;
+        }
+        
+        if (!originalName.toLowerCase().endsWith('.pdf')) {
+          originalName = originalName + '.pdf';
+        }
+        
+        const publicId = sanitizeFilename(originalName);
+        
+        console.log('Subiendo PDF en createProduct:', publicId);
+        
+        const url = await uploadBase64(downloadsBase64[i], { 
+          folder: 'pdf', 
+          resource_type: 'raw', 
+          public_id: publicId,
+          use_filename: true, 
+          unique_filename: false 
+        });
+        
         if (!downloads[i]) downloads[i] = { title: '', description: '', link: '' };
         downloads[i].link = url;
       }
@@ -147,12 +173,35 @@ exports.updateProductByRuta = async (req, res) => {
     if (mainImageBase64) {
       mainImage = await uploadBase64(mainImageBase64, { folder: 'imagenes/products', public_id: `main_${Date.now()}` });
     }
+    
     for (let i = 0; i < thumbnailsBase64.length; i++) {
       if (thumbnailsBase64[i]) thumbnails[i] = await uploadBase64(thumbnailsBase64[i], { folder: 'imagenes/products', public_id: `thumb_${Date.now()}_${i}` });
     }
+    
+    // ✅ BLOQUE CORREGIDO para PDFs en updateProductByRuta (SOLO UNO)
     for (let i = 0; i < downloadsBase64.length; i++) {
       if (downloadsBase64[i]) {
-        const url = await uploadBase64(downloadsBase64[i], { folder: 'pdf', resource_type: 'raw', public_id: sanitizeFilename(downloadsFileNames[i]) || `doc_${Date.now()}_${i}`, use_filename: true, unique_filename: false });
+        let originalName = downloadsFileNames[i];
+        if (!originalName) {
+          originalName = `documento_${Date.now()}_${i}.pdf`;
+        }
+        
+        if (!originalName.toLowerCase().endsWith('.pdf')) {
+          originalName = originalName + '.pdf';
+        }
+        
+        const publicId = sanitizeFilename(originalName);
+        
+        console.log('Subiendo PDF en updateProductByRuta:', publicId);
+        
+        const url = await uploadBase64(downloadsBase64[i], { 
+          folder: 'pdf', 
+          resource_type: 'raw', 
+          public_id: publicId,
+          use_filename: true, 
+          unique_filename: false 
+        });
+        
         if (!downloads[i]) downloads[i] = { title: '', description: '', link: '' };
         downloads[i].link = url;
       }
@@ -199,12 +248,35 @@ exports.updateProduct = async (req, res) => {
     if (mainImageBase64) {
       mainImage = await uploadBase64(mainImageBase64, { folder: 'imagenes/products', public_id: `main_${Date.now()}` });
     }
+    
     for (let i = 0; i < thumbnailsBase64.length; i++) {
       if (thumbnailsBase64[i]) thumbnails[i] = await uploadBase64(thumbnailsBase64[i], { folder: 'imagenes/products', public_id: `thumb_${Date.now()}_${i}` });
     }
+    
+    // ✅ BLOQUE CORREGIDO para PDFs en updateProduct
     for (let i = 0; i < downloadsBase64.length; i++) {
       if (downloadsBase64[i]) {
-        const url = await uploadBase64(downloadsBase64[i], { folder: 'pdf', resource_type: 'raw', public_id: sanitizeFilename(downloadsFileNames[i]) || `doc_${Date.now()}_${i}`, use_filename: true, unique_filename: false });
+        let originalName = downloadsFileNames[i];
+        if (!originalName) {
+          originalName = `documento_${Date.now()}_${i}.pdf`;
+        }
+        
+        if (!originalName.toLowerCase().endsWith('.pdf')) {
+          originalName = originalName + '.pdf';
+        }
+        
+        const publicId = sanitizeFilename(originalName);
+        
+        console.log('Subiendo PDF en updateProduct:', publicId);
+        
+        const url = await uploadBase64(downloadsBase64[i], { 
+          folder: 'pdf', 
+          resource_type: 'raw', 
+          public_id: publicId,
+          use_filename: true, 
+          unique_filename: false 
+        });
+        
         if (!downloads[i]) downloads[i] = { title: '', description: '', link: '' };
         downloads[i].link = url;
       }
